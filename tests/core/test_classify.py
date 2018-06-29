@@ -11,15 +11,16 @@ from blueline.core.classify import (
     treble_dodges,
     treble_hunts_plainly,
 )
-from blueline.core.method import Method
 from blueline.core.notation import parse_change
-
-PLAIN_BOB_MINOR = Method.from_notation("Plain Bob", 6, "x16x16x16,12")
-PLAIN_BOB_MAJOR = Method.from_notation("Plain Bob", 8, "x18x18x18x18,12")
-GRANDSIRE_DOUBLES = Method.from_notation("Grandsire", 5, "3.1.5.1.5.1.5.1.5.1")
-CAMBRIDGE_MINOR = Method.from_notation("Cambridge Surprise", 6, "x36x14x12x36x14x56,12")
-CAMBRIDGE_MAJOR = Method.from_notation("Cambridge Surprise", 8, "x38x14x1258x36x14x58x16x78,12")
-NO_HUNT_BELL = Method.from_notation("nothing fixed", 6, "x16x16x16x16x16")
+from tests.methods import (
+    CAMBRIDGE_MAJOR,
+    CAMBRIDGE_MINOR,
+    GRANDSIRE_DOUBLES,
+    NO_HUNT_BELL,
+    PLAIN_BOB_MAJOR,
+    PLAIN_BOB_MINOR,
+    method_id,
+)
 
 
 class TestClassificationText:
@@ -108,7 +109,7 @@ class TestClassify:
     @pytest.mark.parametrize(
         "method",
         [PLAIN_BOB_MINOR, PLAIN_BOB_MAJOR, GRANDSIRE_DOUBLES, CAMBRIDGE_MINOR, CAMBRIDGE_MAJOR],
-        ids=lambda m: f"{m.name} {m.stage}",
+        ids=method_id,
     )
     def test_every_real_method_gets_a_class(self, method):
         assert str(classify(method))

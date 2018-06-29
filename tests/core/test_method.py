@@ -2,11 +2,12 @@ import pytest
 
 from blueline.core.method import Method, MethodError
 from blueline.core.row import Row
-
-PLAIN_BOB_MINOR = Method.from_notation("Plain Bob", 6, "x16x16x16,12")
-PLAIN_BOB_MAJOR = Method.from_notation("Plain Bob", 8, "x18x18x18x18,12")
-CAMBRIDGE_MINOR = Method.from_notation("Cambridge Surprise", 6, "x36x14x12x36x14x56,12")
-GRANDSIRE_DOUBLES = Method.from_notation("Grandsire", 5, "3.1.5.1.5.1.5.1.5.1")
+from tests.methods import (
+    CAMBRIDGE_MINOR,
+    GRANDSIRE_DOUBLES,
+    PLAIN_BOB_MAJOR,
+    PLAIN_BOB_MINOR,
+)
 
 
 class TestBuilding:

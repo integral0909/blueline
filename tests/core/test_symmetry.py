@@ -15,11 +15,12 @@ from blueline.core.symmetry import (
     rotate,
     symmetric_notation,
 )
+from tests import methods
 
-PLAIN_BOB_MINOR = list(parse_notation("x16x16x16,12", 6))
-CAMBRIDGE_MINOR = list(parse_notation("x36x14x12x36x14x56,12", 6))
-GRANDSIRE_DOUBLES = list(parse_notation("3.1.5.1.5.1.5.1.5.1", 5))
-DOUBLE_NORWICH = list(parse_notation("x14x36x58x18,18", 8))
+PLAIN_BOB_MINOR = list(methods.PLAIN_BOB_MINOR.changes)
+CAMBRIDGE_MINOR = list(methods.CAMBRIDGE_MINOR.changes)
+GRANDSIRE_DOUBLES = list(methods.GRANDSIRE_DOUBLES.changes)
+DOUBLE_NORWICH = list(methods.DOUBLE_NORWICH.changes)
 STEDMAN_DOUBLES = list(parse_notation("3.1.5.3.1.3.1.3.5.1", 5))
 
 
