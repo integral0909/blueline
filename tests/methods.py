@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from blueline.core.method import Method
 
+PLAIN_BOB_DOUBLES = Method.from_notation("Plain Bob", 5, "5.1.5.1.5,125")
 PLAIN_BOB_MINOR = Method.from_notation("Plain Bob", 6, "x16x16x16,12")
 PLAIN_BOB_MAJOR = Method.from_notation("Plain Bob", 8, "x18x18x18x18,12")
 GRANDSIRE_DOUBLES = Method.from_notation("Grandsire", 5, "3.1.5.1.5.1.5.1.5.1")
@@ -22,6 +23,7 @@ NO_HUNT_BELL = Method.from_notation("nothing fixed", 6, "x16x16x16x16x16")
 
 #: Keyed by the shape of the plain course, for tests that want to sweep.
 ALL_METHODS = (
+    PLAIN_BOB_DOUBLES,
     PLAIN_BOB_MINOR,
     PLAIN_BOB_MAJOR,
     GRANDSIRE_DOUBLES,
@@ -32,6 +34,7 @@ ALL_METHODS = (
 
 #: What each method's plain course should come to, checked against the books.
 COURSE_LENGTHS = {
+    "Plain Bob 5": 40,
     "Plain Bob 6": 60,
     "Plain Bob 8": 112,
     "Grandsire 5": 30,
