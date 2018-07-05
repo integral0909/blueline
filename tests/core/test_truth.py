@@ -1,10 +1,11 @@
-
 from blueline.core.calls import plain_bob_calls
 from blueline.core.row import Row
 from blueline.core.touch import parse_calling, plain_course, repeat
 from blueline.core.truth import (
     Repeat,
     comes_round_early,
+    extent_length,
+    is_extent,
     prove,
     prove_against,
     prove_touch,
@@ -147,3 +148,27 @@ class TestProveAgainst:
     def test_it_counts_both_lots(self):
         rows = plain_course(PLAIN_BOB_MINOR).rows()[:-1]
         assert prove_against(rows, rows).total == 120
+
+
+class TestExtentLength:
+    def test_doubles(self):
+        assert extent_length(5) == 120
+
+    def test_minor(self):
+        assert extent_length(6) == 720
+
+    def test_major(self):
+        assert extent_length(8) == 40320
+
+    def test_it_is_the_stage_factorial(self):
+        assert extent_length(4) == 24
+
+    def test_the_classic_hundred_and_twenty_is_an_extent(self):
+        touch = repeat(parse_calling(PLAIN_BOB_DOUBLES, PB5, "ppp-"), 3)
+        assert is_extent(touch)
+
+    def test_a_plain_course_is_not(self):
+        assert not is_extent(plain_course(PLAIN_BOB_DOUBLES))
+
+    def test_something_false_is_not_an_extent_however_long(self):
+        assert not is_extent(repeat(plain_course(PLAIN_BOB_MINOR), 12))

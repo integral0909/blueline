@@ -107,6 +107,23 @@ def comes_round_early(touch: Touch) -> bool:
     return bool(rounds_at(rung_rows(touch)[1:]))
 
 
+def extent_length(stage: int) -> int:
+    """How many rows there are in an extent, which is every row once."""
+    total = 1
+    for bell in range(2, stage + 1):
+        total *= bell
+    return total
+
+
+def is_extent(touch: Touch) -> bool:
+    """Whether a touch rings every row at its stage exactly once."""
+    if not touch.comes_round():
+        return False
+    if not prove_touch(touch).is_true:
+        return False
+    return touch.length == extent_length(touch.stage)
+
+
 def prove_against(rows: List[Row], already: List[Row]) -> TruthReport:
     """Prove a block against rows that have already been rung.
 

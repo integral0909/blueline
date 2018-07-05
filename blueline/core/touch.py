@@ -9,6 +9,9 @@ The calling is held as one entry per lead, with None meaning a plain lead. That
 is more verbose than the way callings are usually written, where only the calls
 are named and the plains are counted, but it makes the touch and its rows line
 up one to one and every awkward question about where a call lands goes away.
+
+Nothing here proves anything. Expanding a touch into rows and deciding whether
+those rows are any good are two jobs, and truth.py does the second.
 """
 
 from __future__ import annotations
@@ -78,15 +81,6 @@ class Touch:
         """Whether the touch ends where it started, which it has to."""
         return self.final_row.is_rounds
 
-    def is_true(self) -> bool:
-        """Whether no row is rung twice.
-
-        The opening rounds and the closing rounds are the same row and that is
-        not falseness, so the last row is left out of the count.
-        """
-        rung = self.rows()[:-1]
-        return len(set(rung)) == len(rung)
-
     @property
     def calling(self) -> str:
         """The calling written out as one symbol per lead."""
@@ -126,18 +120,3 @@ def repeat(touch: Touch, times: int) -> Touch:
     if times < 1:
         raise TouchError(f"cannot ring a block {times} times")
     return Touch(method=touch.method, calls=touch.calls * times)
-
-
-def extent_length(stage: int) -> int:
-    """How many rows there are in an extent, which is every row once."""
-    total = 1
-    for bell in range(2, stage + 1):
-        total *= bell
-    return total
-
-
-def is_extent(touch: Touch) -> bool:
-    """Whether the touch rings every row at its stage exactly once."""
-    if not touch.comes_round() or not touch.is_true():
-        return False
-    return touch.length == extent_length(touch.stage)

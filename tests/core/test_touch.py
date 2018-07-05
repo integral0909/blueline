@@ -5,12 +5,11 @@ from blueline.core.row import Row
 from blueline.core.touch import (
     Touch,
     TouchError,
-    extent_length,
-    is_extent,
     parse_calling,
     plain_course,
     repeat,
 )
+from blueline.core.truth import is_extent, prove_touch
 from tests.methods import (
     CAMBRIDGE_MINOR,
     GRANDSIRE_DOUBLES,
@@ -38,7 +37,7 @@ class TestPlainCourse:
         assert plain_course(PLAIN_BOB_MINOR).comes_round()
 
     def test_a_plain_course_is_true(self):
-        assert plain_course(CAMBRIDGE_MINOR).is_true()
+        assert prove_touch(plain_course(CAMBRIDGE_MINOR)).is_true
 
     def test_it_is_all_plain_leads(self):
         assert plain_course(PLAIN_BOB_MINOR).calling == "ppppp"
@@ -85,7 +84,7 @@ class TestThreeBobTouch:
         assert parse_calling(PLAIN_BOB_MINOR, PB6, "---").comes_round()
 
     def test_it_is_true(self):
-        assert parse_calling(PLAIN_BOB_MINOR, PB6, "---").is_true()
+        assert prove_touch(parse_calling(PLAIN_BOB_MINOR, PB6, "---")).is_true
 
     def test_two_bobs_do_not_come_round(self):
         assert not parse_calling(PLAIN_BOB_MINOR, PB6, "--").comes_round()
@@ -110,22 +109,13 @@ class TestRepeat:
 
 
 class TestExtents:
-    def test_an_extent_of_doubles_is_a_hundred_and_twenty(self):
-        assert extent_length(5) == 120
-
-    def test_an_extent_of_minor_is_seven_hundred_and_twenty(self):
-        assert extent_length(6) == 720
-
-    def test_an_extent_of_major_is_forty_thousand_odd(self):
-        assert extent_length(8) == 40320
-
     def test_the_classic_hundred_and_twenty_of_plain_bob_doubles(self):
         # Three courses with a bob at the end of each. The first touch most
         # ringers ever call.
         touch = repeat(parse_calling(PLAIN_BOB_DOUBLES, PB5, "ppp-"), 3)
         assert touch.length == 120
         assert touch.comes_round()
-        assert touch.is_true()
+        assert prove_touch(touch).is_true
         assert is_extent(touch)
 
     def test_it_really_does_ring_every_row(self):
