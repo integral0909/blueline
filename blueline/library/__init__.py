@@ -1,5 +1,6 @@
+from blueline.errors import LibraryError
 from blueline.library.builtin import STANDARD, standard_methods
-from blueline.library.collection import LibraryError, MethodLibrary, standard_library
+from blueline.library.collection import MethodLibrary, standard_library
 
 __all__ = [
     "STANDARD",

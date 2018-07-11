@@ -17,7 +17,7 @@ from typing import Dict, Optional, Tuple
 from dataclasses import dataclass
 
 from blueline.core.classify import Classification, classify
-from blueline.core.coursing import CoursingError, coursing_order
+from blueline.core.coursing import coursing_order
 from blueline.core.method import Method
 from blueline.core.music import MusicCount, count_music
 from blueline.core.row import Row
@@ -25,6 +25,7 @@ from blueline.core.symmetry import describe_symmetry
 from blueline.core.title import Title, title_for
 from blueline.core.touch import plain_course
 from blueline.core.truth import prove
+from blueline.errors import CoursingError
 
 
 @dataclass(frozen=True)
