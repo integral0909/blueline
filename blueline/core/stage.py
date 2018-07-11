@@ -16,6 +16,8 @@ from __future__ import annotations
 
 from typing import Dict, Final
 
+from blueline.errors import StageError
+
 BELL_SYMBOLS: Final[str] = "1234567890ETABCD"
 
 MAX_STAGE: Final[int] = len(BELL_SYMBOLS)
@@ -37,10 +39,6 @@ STAGE_NAMES: Final[Dict[int, str]] = {
     15: "Septuples",
     16: "Sixteen",
 }
-
-
-class StageError(ValueError):
-    """A stage outside the range this library can work with."""
 
 
 def check_stage(stage: int) -> int:

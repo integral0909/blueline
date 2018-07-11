@@ -22,6 +22,7 @@ from functools import reduce
 from math import gcd
 
 from blueline.core.stage import bell_number, bell_symbol, check_stage, rounds_string
+from blueline.errors import RowError
 
 
 def _lcm(*numbers):
@@ -31,10 +32,6 @@ def _lcm(*numbers):
     has to as well.
     """
     return reduce(lambda one, other: one * other // gcd(one, other), numbers, 1)
-
-
-class RowError(ValueError):
-    """A row that is not a permutation of the bells at its stage."""
 
 
 @dataclass(frozen=True)

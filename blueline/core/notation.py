@@ -22,13 +22,10 @@ from dataclasses import dataclass
 
 from blueline.core.row import Row
 from blueline.core.stage import bell_number, bell_symbol, check_stage
+from blueline.errors import NotationError
 
 CROSS_SYMBOLS = "-x"
 SEPARATORS = ".&"
-
-
-class NotationError(ValueError):
-    """Place notation that cannot be read, or that does not work at its stage."""
 
 
 @dataclass(frozen=True)

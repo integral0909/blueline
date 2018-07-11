@@ -17,10 +17,7 @@ from typing import List, Tuple
 
 from blueline.core.method import Method
 from blueline.core.row import Row
-
-
-class CoursingError(ValueError):
-    """A method whose coursing order does not mean anything."""
+from blueline.errors import CoursingError
 
 
 def coursing_places(stage: int) -> Tuple[int, ...]:

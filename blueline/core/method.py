@@ -20,10 +20,7 @@ from dataclasses import dataclass, field
 from blueline.core.notation import Change, apply_all, format_notation, parse_notation
 from blueline.core.row import Row
 from blueline.core.stage import check_stage, is_odd_stage
-
-
-class MethodError(ValueError):
-    """A method that does not hold together."""
+from blueline.errors import MethodError
 
 
 @dataclass(frozen=True)

@@ -23,10 +23,7 @@ from dataclasses import dataclass
 from blueline.core.calls import PLAIN, Call, called_lead
 from blueline.core.method import Method
 from blueline.core.row import Row
-
-
-class TouchError(ValueError):
-    """A touch that cannot be rung as written."""
+from blueline.errors import TouchError
 
 
 @dataclass(frozen=True)

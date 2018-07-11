@@ -18,7 +18,8 @@ from typing import FrozenSet, List, Optional, Tuple
 
 from dataclasses import dataclass
 
-from blueline.core.stage import STAGE_NAMES, StageError, stage_from_name, stage_name
+from blueline.core.stage import STAGE_NAMES, stage_from_name, stage_name
+from blueline.errors import StageError, TitleError
 
 #: Class words, longest first so Treble Bob beats Bob when both would match.
 CLASS_WORDS: Tuple[str, ...] = (
@@ -40,10 +41,6 @@ MODIFIERS: Tuple[str, ...] = ("Little", "Differential")
 CLASSLESS_NAMES: FrozenSet[str] = frozenset(
     {"Grandsire", "Stedman", "Erin", "Original", "Reverse Grandsire", "Double Grandsire"}
 )
-
-
-class TitleError(ValueError):
-    """A title that cannot be read, or one that could not be built."""
 
 
 @dataclass(frozen=True)

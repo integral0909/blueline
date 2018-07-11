@@ -20,10 +20,7 @@ from dataclasses import dataclass
 from blueline.core.notation import Change, parse_change
 from blueline.core.row import Row
 from blueline.core.stage import check_stage
-
-
-class CallError(ValueError):
-    """A call that does not fit the method it is being called in."""
+from blueline.errors import CallError
 
 
 @dataclass(frozen=True)
