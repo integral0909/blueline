@@ -3,22 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from blueline.db.models import Base, StoredComposition, StoredMethod, now
-from blueline.db.session import (
-    MEMORY_URL,
-    create_all,
-    drop_all,
-    make_engine,
-    session_factory,
-    session_scope,
-)
-
-
-@pytest.fixture()
-def factory():
-    engine = make_engine(MEMORY_URL)
-    create_all(engine)
-    yield session_factory(engine)
-    drop_all(engine)
+from blueline.db.session import session_scope
 
 
 def a_method(**over) -> StoredMethod:
