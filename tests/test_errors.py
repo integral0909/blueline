@@ -70,10 +70,13 @@ class TestCatchingTheLot:
             parse_title("Cambridge")
 
     def test_a_missing_method_is_caught_by_the_base(self):
-        from blueline.library import standard_library
+        from blueline.db.repository import MethodRepository
+        from blueline.db.session import MEMORY_URL, create_all, make_engine, session_factory
 
-        with pytest.raises(BluelineError):
-            standard_library().get("Nowhere Surprise Major")
+        engine = make_engine(MEMORY_URL)
+        create_all(engine)
+        with session_factory(engine)() as session, pytest.raises(BluelineError):
+            MethodRepository(session).get("Nowhere Surprise Major")
 
     def test_the_particular_type_still_comes_through(self):
         from blueline.core.stage import check_stage
