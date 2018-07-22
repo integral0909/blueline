@@ -8,11 +8,14 @@ possible to run a test inside a transaction and roll it back afterwards.
 
 from __future__ import annotations
 
+from typing import Dict
+
 from collections.abc import Iterator
 from contextlib import contextmanager
 
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from blueline.db.models import Base
 
@@ -21,8 +24,20 @@ MEMORY_URL = "sqlite+pysqlite:///:memory:"
 
 
 def make_engine(url: str = DEFAULT_URL, echo: bool = False) -> Engine:
-    """Build an engine, telling sqlite to behave itself about foreign keys."""
-    engine = create_engine(url, echo=echo, future=True)
+    """Build an engine, telling sqlite to behave itself.
+
+    Two sqlite habits have to be worked around. It ignores foreign keys unless
+    asked, which turns a cascade into a pile of orphans nobody notices for a
+    month. And every connection to an in memory database gets a database of its
+    own, so a test that creates the tables on one connection and queries on
+    another finds no tables at all. A static pool hands out the one connection
+    to everybody, which is what makes an in memory database behave like a file.
+    """
+    kwargs: Dict[str, object] = {"echo": echo, "future": True}
+    if ":memory:" in url:
+        kwargs["poolclass"] = StaticPool
+        kwargs["connect_args"] = {"check_same_thread": False}
+    engine = create_engine(url, **kwargs)
     if url.startswith("sqlite"):
         from sqlalchemy import event
 
