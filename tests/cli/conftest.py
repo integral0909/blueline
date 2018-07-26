@@ -2,9 +2,8 @@ import pytest
 from typer.testing import CliRunner
 
 from blueline.api import deps
-from blueline.db.repository import MethodRepository
-from blueline.db.seed import seed_standard
-from blueline.db.session import MEMORY_URL, create_all, make_engine, session_factory
+from blueline.config import Settings
+from blueline.db.session import MEMORY_URL
 
 
 @pytest.fixture()
@@ -15,16 +14,16 @@ def runner() -> CliRunner:
 @pytest.fixture()
 def library():
     """Point the command line at a fresh in memory database."""
-    engine = make_engine(MEMORY_URL)
-    create_all(engine)
-    deps._engine = engine
-    deps._factory = session_factory(engine)
-    return deps._factory
+    deps.reset()
+    deps.configure(Settings(database_url=MEMORY_URL))
+    yield deps.get_factory()
+    deps.reset()
 
 
 @pytest.fixture()
-def seeded(library):
-    with library() as session:
-        seed_standard(MethodRepository(session))
-        session.commit()
-    return library
+def seeded():
+    """The same, with the standard methods already loaded."""
+    deps.reset()
+    deps.configure(Settings(database_url=MEMORY_URL, seed_on_start=True))
+    yield deps.get_factory()
+    deps.reset()
