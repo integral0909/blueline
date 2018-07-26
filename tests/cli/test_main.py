@@ -1,0 +1,131 @@
+from blueline.cli.main import EXIT_FOR, app
+from blueline.service.results import Reason
+
+CAMBRIDGE = "x38x14x1258x36x14x58x16x78,12"
+
+
+class TestExitCodes:
+    def test_every_reason_has_a_code(self):
+        for reason in Reason:
+            assert reason in EXIT_FOR
+
+    def test_they_are_all_different(self):
+        assert len(set(EXIT_FOR.values())) == len(EXIT_FOR)
+
+    def test_none_of_them_mean_success(self):
+        assert 0 not in EXIT_FOR.values()
+
+
+class TestAnalyse:
+    def test_it_analyses_notation(self, runner, library):
+        result = runner.invoke(app, ["analyse", CAMBRIDGE, "-s", "8", "-n", "Cambridge"])
+        assert result.exit_code == 0
+        assert "Cambridge Surprise Major" in result.stdout
+
+    def test_it_shows_the_shape(self, runner, library):
+        result = runner.invoke(app, ["analyse", CAMBRIDGE, "-s", "8", "-n", "Cambridge"])
+        assert "224" in result.stdout
+
+    def test_bad_notation_exits_with_the_invalid_code(self, runner, library):
+        result = runner.invoke(app, ["analyse", "x1x1", "-s", "5"])
+        assert result.exit_code == EXIT_FOR[Reason.INVALID]
+
+    def test_it_stores_nothing(self, runner, library):
+        runner.invoke(app, ["analyse", CAMBRIDGE, "-s", "8", "-n", "Cambridge"])
+        listed = runner.invoke(app, ["list"])
+        assert "0 methods" in listed.stdout
+
+
+class TestSeed:
+    def test_it_loads_the_standard_set(self, runner, library):
+        result = runner.invoke(app, ["seed"])
+        assert result.exit_code == 0
+        assert "16 added" in result.stdout
+
+    def test_running_it_twice_adds_nothing(self, runner, library):
+        runner.invoke(app, ["seed"])
+        again = runner.invoke(app, ["seed"])
+        assert "0 added" in again.stdout
+
+
+class TestList:
+    def test_it_lists_what_is_there(self, runner, seeded):
+        result = runner.invoke(app, ["list"])
+        assert "16 methods" in result.stdout
+
+    def test_it_filters_by_name(self, runner, seeded):
+        result = runner.invoke(app, ["list", "-n", "cambridge"])
+        assert "2 methods" in result.stdout
+
+    def test_it_filters_by_stage(self, runner, seeded):
+        # The table truncates titles to fit eighty columns, so the count is
+        # what this can honestly assert on.
+        result = runner.invoke(app, ["list", "-s", "8"])
+        assert "8 methods" in result.stdout
+
+    def test_an_empty_library_says_nothing_is_there(self, runner, library):
+        assert "0 methods" in runner.invoke(app, ["list"]).stdout
+
+
+class TestShow:
+    def test_it_shows_a_stored_method(self, runner, seeded):
+        result = runner.invoke(app, ["show", "Plain Bob Minor"])
+        assert result.exit_code == 0
+        assert "135264" in result.stdout
+
+    def test_something_missing_exits_with_the_not_found_code(self, runner, seeded):
+        result = runner.invoke(app, ["show", "Nowhere Surprise Major"])
+        assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestAddAndRemove:
+    def test_a_method_can_be_added(self, runner, library):
+        result = runner.invoke(app, ["add", "x16x16x16,12", "-s", "6", "-n", "Plain"])
+        assert result.exit_code == 0
+        assert "stored Plain Bob Minor" in result.stdout
+
+    def test_it_is_there_afterwards(self, runner, library):
+        runner.invoke(app, ["add", "x16x16x16,12", "-s", "6", "-n", "Plain"])
+        assert "1 methods" in runner.invoke(app, ["list"]).stdout
+
+    def test_adding_it_twice_exits_with_the_conflict_code(self, runner, library):
+        runner.invoke(app, ["add", "x16x16x16,12", "-s", "6", "-n", "Plain"])
+        again = runner.invoke(app, ["add", "x16x16x16,12", "-s", "6", "-n", "Plain"])
+        assert again.exit_code == EXIT_FOR[Reason.ALREADY_EXISTS]
+
+    def test_a_method_can_be_removed(self, runner, seeded):
+        result = runner.invoke(app, ["remove", "Plain Bob Minor"])
+        assert result.exit_code == 0
+        assert "removed Plain Bob Minor" in result.stdout
+
+    def test_removing_something_missing_exits_not_found(self, runner, seeded):
+        result = runner.invoke(app, ["remove", "Nowhere Surprise Major"])
+        assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestLine:
+    def test_it_draws_a_line(self, runner, seeded):
+        result = runner.invoke(app, ["line", "Plain Bob Minor", "2"])
+        assert result.exit_code == 0
+        assert "1*3456" in result.stdout
+
+    def test_it_describes_the_work(self, runner, seeded):
+        result = runner.invoke(app, ["line", "Plain Bob Minor", "1"])
+        assert "1 to 6 up" in result.stdout
+
+    def test_a_bell_that_is_not_there_exits_invalid(self, runner, seeded):
+        result = runner.invoke(app, ["line", "Plain Bob Minor", "9"])
+        assert result.exit_code == EXIT_FOR[Reason.INVALID]
+
+
+class TestFalseness:
+    def test_it_lists_false_course_heads(self, runner, seeded):
+        result = runner.invoke(app, ["falseness", "Cambridge Surprise Major", "-l", "3"])
+        assert result.exit_code == 0
+        assert "false course heads" in result.stdout
+
+
+class TestPlaceBells:
+    def test_plain_bob_major_runs_two_four_six_eight_seven_five_three(self, runner, seeded):
+        result = runner.invoke(app, ["place-bells", "Plain Bob Major"])
+        assert "2468753" in result.stdout
