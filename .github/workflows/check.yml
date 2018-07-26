@@ -1,0 +1,35 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      # The same three steps scripts/check.sh runs, split out so a failure
+      # names the one that went without anybody reading the log.
+      - name: lint
+        run: flake8 blueline tests
+
+      - name: types
+        run: mypy blueline
+
+      - name: tests
+        run: pytest tests -q
