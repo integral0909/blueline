@@ -129,3 +129,55 @@ class TestPlaceBells:
     def test_plain_bob_major_runs_two_four_six_eight_seven_five_three(self, runner, seeded):
         result = runner.invoke(app, ["place-bells", "Plain Bob Major"])
         assert "2468753" in result.stdout
+
+
+class TestProve:
+    def test_the_three_bob_touch(self, runner, seeded):
+        result = runner.invoke(app, ["prove", "Plain Bob Minor", "---"])
+        assert result.exit_code == 0
+        assert "36" in result.stdout
+
+    def test_it_says_a_touch_comes_round(self, runner, seeded):
+        result = runner.invoke(app, ["prove", "Plain Bob Minor", "---"])
+        assert "comes round" in result.stdout
+
+    def test_the_classic_hundred_and_twenty_is_an_extent(self, runner, seeded):
+        result = runner.invoke(app, ["prove", "Plain Bob Doubles", "ppp-", "-t", "3"])
+        assert "extent" in result.stdout
+
+    def test_a_touch_that_does_not_come_round_says_where_it_got_to(self, runner, seeded):
+        # Written bb rather than --, because a bare -- is the shell's own end
+        # of options marker and never reaches the command. That is the whole
+        # reason b is accepted for a bob.
+        result = runner.invoke(app, ["prove", "Plain Bob Minor", "bb"])
+        assert result.exit_code == 0
+        assert "no," in result.stdout
+
+    def test_a_calling_of_dashes_gets_through(self, runner, seeded):
+        result = runner.invoke(app, ["prove", "Plain Bob Minor", "---"])
+        assert result.exit_code == 0
+        assert "36" in result.stdout
+
+    def test_b_and_a_dash_ring_the_same_touch(self, runner, seeded):
+        with_dashes = runner.invoke(app, ["prove", "Plain Bob Minor", "---"])
+        with_bees = runner.invoke(app, ["prove", "Plain Bob Minor", "bbb"])
+        assert with_dashes.stdout == with_bees.stdout
+
+    def test_a_calling_it_cannot_read_exits_invalid(self, runner, seeded):
+        result = runner.invoke(app, ["prove", "Plain Bob Minor", "zzz"])
+        assert result.exit_code == EXIT_FOR[Reason.INVALID]
+
+    def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
+        result = runner.invoke(app, ["prove", "Nowhere Surprise Major", "-"])
+        assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestCourse:
+    def test_it_reports_the_plain_course(self, runner, seeded):
+        result = runner.invoke(app, ["course", "Cambridge Surprise Minor"])
+        assert result.exit_code == 0
+        assert "120" in result.stdout
+
+    def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
+        result = runner.invoke(app, ["course", "Nowhere Surprise Major"])
+        assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
