@@ -181,3 +181,27 @@ class TestCourse:
     def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
         result = runner.invoke(app, ["course", "Nowhere Surprise Major"])
         assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestSearch:
+    def test_it_finds_callings(self, runner, seeded):
+        result = runner.invoke(app, ["search", "Plain Bob Minor", "-l", "3"])
+        assert result.exit_code == 0
+        assert "ppppp" in result.stdout
+
+    def test_it_says_whether_it_finished(self, runner, seeded):
+        result = runner.invoke(app, ["search", "Plain Bob Minor", "-l", "3"])
+        assert "callings" in result.stdout
+
+    def test_the_calls_can_be_restricted(self, runner, seeded):
+        result = runner.invoke(app, ["search", "Plain Bob Minor", "--calls", "p", "-l", "2"])
+        assert result.exit_code == 0
+        assert "ppppp" in result.stdout
+
+    def test_a_call_it_does_not_have_exits_invalid(self, runner, seeded):
+        result = runner.invoke(app, ["search", "Plain Bob Minor", "--calls", "pz"])
+        assert result.exit_code == EXIT_FOR[Reason.INVALID]
+
+    def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
+        result = runner.invoke(app, ["search", "Nowhere Surprise Major"])
+        assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
