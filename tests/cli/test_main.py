@@ -205,3 +205,64 @@ class TestSearch:
     def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
         result = runner.invoke(app, ["search", "Nowhere Surprise Major"])
         assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestImportExport:
+    def test_it_exports_json_to_the_screen(self, runner, seeded):
+        result = runner.invoke(app, ["export"])
+        assert result.exit_code == 0
+        assert '"format"' in result.stdout
+
+    def test_it_exports_the_line_format(self, runner, seeded):
+        result = runner.invoke(app, ["export", "-f", "lines"])
+        assert result.exit_code == 0
+        assert "Cambridge" in result.stdout
+
+    def test_it_exports_one_stage(self, runner, seeded, tmp_path):
+        out = tmp_path / "six.txt"
+        result = runner.invoke(app, ["export", str(out), "-f", "lines", "-s", "6"])
+        assert result.exit_code == 0
+        body = [line for line in out.read_text().splitlines() if not line.startswith("#")]
+        assert all(line.split(",")[1].strip() == "6" for line in body)
+
+    def test_it_writes_to_a_file(self, runner, seeded, tmp_path):
+        out = tmp_path / "all.json"
+        result = runner.invoke(app, ["export", str(out)])
+        assert result.exit_code == 0
+        assert "wrote" in result.stdout
+        assert out.exists()
+
+    def test_a_format_it_does_not_know_exits_invalid(self, runner, seeded):
+        result = runner.invoke(app, ["export", "-f", "xml"])
+        assert result.exit_code == EXIT_FOR[Reason.INVALID]
+
+    def test_it_imports_a_file(self, runner, library, tmp_path):
+        source = tmp_path / "few.txt"
+        source.write_text("Plain, 6, x16x16x16,12\nCambridge, 6, x36x14x12x36x14x56,12\n")
+        result = runner.invoke(app, ["import", str(source)])
+        assert result.exit_code == 0
+        assert "2 added" in result.stdout
+
+    def test_the_methods_are_there_afterwards(self, runner, library, tmp_path):
+        source = tmp_path / "one.txt"
+        source.write_text("Plain, 6, x16x16x16,12\n")
+        runner.invoke(app, ["import", str(source)])
+        assert "1 methods" in runner.invoke(app, ["list"]).stdout
+
+    def test_a_bad_line_is_reported_and_the_rest_go_in(self, runner, library, tmp_path):
+        source = tmp_path / "mixed.txt"
+        source.write_text("Plain, 6, x16x16x16,12\nrubbish\n")
+        result = runner.invoke(app, ["import", str(source)])
+        assert "1 added" in result.stdout
+        assert "could not be read" in result.stdout
+
+    def test_a_file_that_is_not_there_is_refused_by_the_parser(self, runner, library, tmp_path):
+        result = runner.invoke(app, ["import", str(tmp_path / "nothing.txt")])
+        assert result.exit_code != 0
+
+    def test_a_round_trip_through_a_file_keeps_everything(self, runner, seeded, tmp_path):
+        out = tmp_path / "all.json"
+        runner.invoke(app, ["export", str(out)])
+        runner.invoke(app, ["remove", "Plain Bob Minor"])
+        result = runner.invoke(app, ["import", str(out)])
+        assert "1 added" in result.stdout
