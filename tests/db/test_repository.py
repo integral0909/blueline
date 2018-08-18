@@ -83,7 +83,7 @@ class TestSearch:
 
     def test_it_finds_by_class(self, loaded):
         found = loaded.search(classification="surprise", stage=8)
-        assert len(found) == 6
+        assert len(found) == 5
 
     def test_results_come_back_by_stage_then_title(self, loaded):
         keys = [(stored.stage, stored.title) for stored in loaded.all()]

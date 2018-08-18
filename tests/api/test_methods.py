@@ -76,7 +76,7 @@ class TestFetching:
 
 class TestListing:
     def test_it_lists_everything(self, seeded):
-        assert seeded.get("/methods").json()["count"] == 16
+        assert seeded.get("/methods").json()["count"] == 15
 
     def test_it_filters_by_name(self, seeded):
         body = seeded.get("/methods", params={"name": "cambridge"}).json()
@@ -91,7 +91,7 @@ class TestListing:
 
     def test_it_filters_by_class(self, seeded):
         body = seeded.get("/methods", params={"classification": "Surprise", "stage": 8}).json()
-        assert body["count"] == 6
+        assert body["count"] == 5
 
     def test_a_filter_matching_nothing_gives_an_empty_list(self, seeded):
         body = seeded.get("/methods", params={"name": "nowhere"}).json()

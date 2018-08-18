@@ -10,7 +10,7 @@ class TestExport:
     def test_the_json_is_a_collection(self, seeded):
         document = json.loads(seeded.get("/methods/export").text)
         assert document["format"] == "blueline.methods"
-        assert len(document["methods"]) == 16
+        assert len(document["methods"]) == 15
 
     def test_it_can_write_the_line_format(self, seeded):
         response = seeded.get("/methods/export", params={"shape": "lines"})
@@ -46,13 +46,13 @@ class TestImport:
     def test_it_reads_json_too(self, client, seeded):
         text = seeded.get("/methods/export").text
         response = client.post("/methods/import", json={"body": text})
-        assert response.json()["total"] == 16
+        assert response.json()["total"] == 15
 
     def test_anything_already_there_is_skipped(self, seeded):
         text = seeded.get("/methods/export").text
         body = seeded.post("/methods/import", json={"body": text}).json()
         assert body["added"] == []
-        assert len(body["skipped"]) == 16
+        assert len(body["skipped"]) == 15
 
     def test_a_bad_record_is_reported_and_the_rest_go_in(self, client):
         body = {"body": "Plain, 6, x16x16x16,12\nrubbish\n"}

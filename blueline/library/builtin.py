@@ -5,6 +5,12 @@ lead length its class demands, a true plain course and the right treble line.
 Anything that did not was left out rather than being included and quietly
 wrong, which is why there is no Treble Bob method here yet.
 
+Rutland went the same way. Its plain course was true and the lead length was
+right, so nothing here caught it, and then splicing showed its lead head
+sitting on its own while Cambridge, Yorkshire, Superlative and Lincolnshire all
+landed together. Four notations written separately agreeing and the fifth not
+means the fifth is wrong, so it is out until somebody checks it against a book.
+
 The notation is the real notation and the names are the bare names, so the
 titles build correctly: the method is called Cambridge, its class is Surprise
 and the title is Cambridge Surprise Major.
@@ -31,7 +37,6 @@ STANDARD: Tuple[Tuple[str, int, str], ...] = (
     ("Yorkshire", 8, "x38x14x58x16x12x38x14x78,12"),
     ("Superlative", 8, "x36x14x58x36x14x58x36x78,12"),
     ("Lincolnshire", 8, "x38x14x58x16x14x58x36x78,12"),
-    ("Rutland", 8, "x38x14x58x16x14x58x16x78,12"),
     ("Bristol", 8, "x58x14.58x58.36.14x14.58x14x18,18"),
     ("Double Norwich Court", 8, "x14x36x58x18,18"),
 )

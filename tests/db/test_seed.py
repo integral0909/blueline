@@ -70,7 +70,7 @@ class TestSearchingTheSeededSet:
         ]
 
     def test_the_six_surprise_major_methods_are_there(self, loaded):
-        assert len(loaded.search(classification="Surprise", stage=8)) == 6
+        assert len(loaded.search(classification="Surprise", stage=8)) == 5
 
     def test_it_covers_five_stages(self, loaded):
         assert loaded.stages() == [5, 6, 7, 8, 9]

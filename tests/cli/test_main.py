@@ -40,7 +40,7 @@ class TestSeed:
     def test_it_loads_the_standard_set(self, runner, library):
         result = runner.invoke(app, ["seed"])
         assert result.exit_code == 0
-        assert "16 added" in result.stdout
+        assert "15 added" in result.stdout
 
     def test_running_it_twice_adds_nothing(self, runner, library):
         runner.invoke(app, ["seed"])
@@ -51,7 +51,7 @@ class TestSeed:
 class TestList:
     def test_it_lists_what_is_there(self, runner, seeded):
         result = runner.invoke(app, ["list"])
-        assert "16 methods" in result.stdout
+        assert "15 methods" in result.stdout
 
     def test_it_filters_by_name(self, runner, seeded):
         result = runner.invoke(app, ["list", "-n", "cambridge"])
@@ -61,7 +61,7 @@ class TestList:
         # The table truncates titles to fit eighty columns, so the count is
         # what this can honestly assert on.
         result = runner.invoke(app, ["list", "-s", "8"])
-        assert "8 methods" in result.stdout
+        assert "7 methods" in result.stdout
 
     def test_an_empty_library_says_nothing_is_there(self, runner, library):
         assert "0 methods" in runner.invoke(app, ["list"]).stdout
