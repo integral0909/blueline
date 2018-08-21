@@ -1,0 +1,113 @@
+"""Spliced touches, assembled from what somebody typed.
+
+Takes the initials a band would write on a card and turns them into a touch,
+having first checked the methods can actually be spliced together. Refusing up
+front with the pair that will not go is more use than proving a touch false and
+leaving somebody to work out why.
+"""
+
+from __future__ import annotations
+
+from typing import Dict, List, Tuple
+
+from dataclasses import dataclass
+
+from blueline.core.method import Method
+from blueline.core.music import MusicCount, count_music
+from blueline.core.spliced import Spliced, build_spliced, spliceable
+from blueline.core.truth import Repeat, prove
+from blueline.db.repository import MethodRepository, to_method
+from blueline.errors import BluelineError
+from blueline.service.results import Result, invalid, not_found, succeeded
+from blueline.service.touches import calls_for
+
+
+@dataclass(frozen=True)
+class SplicedReport:
+    """What a spliced touch does."""
+
+    order: str
+    calling: str
+    methods_used: Tuple[str, ...]
+    leads: int
+    length: int
+    comes_round: bool
+    is_true: bool
+    repeats: Tuple[Repeat, ...]
+    music: MusicCount
+    final_row: str
+
+    @property
+    def is_ringable(self) -> bool:
+        return self.comes_round and self.is_true
+
+    def summary(self) -> str:
+        used = len(self.methods_used)
+        word = "method" if used == 1 else "methods"
+        if not self.comes_round:
+            return f"{self.length} changes of {used} {word}, does not come round"
+        if not self.is_true:
+            return f"{self.length} changes of {used} {word}, false"
+        return f"{self.length} true changes of {used} {word}"
+
+
+def gather(repository: MethodRepository, titles: List[str]) -> Result[Dict[str, Method]]:
+    """Look up the methods a splice needs, keyed by their bare names."""
+    found: Dict[str, Method] = {}
+    for title in titles:
+        stored = repository.find(title)
+        if stored is None:
+            return not_found(f"no method called {title!r}")
+        method = to_method(stored)
+        if method.name[0].upper() in {name[0].upper() for name in found}:
+            return invalid(f"{method.name} and another method share an initial")
+        found[method.name] = method
+    if not found:
+        return invalid("a splice needs at least one method")
+    return succeeded(found)
+
+
+def report_on(touch: Spliced) -> SplicedReport:
+    rows = touch.rows()[:-1]
+    proof = prove(rows)
+    return SplicedReport(
+        order=touch.order,
+        calling=touch.calling,
+        methods_used=tuple(touch.methods_used()),
+        leads=touch.leads,
+        length=touch.length,
+        comes_round=touch.comes_round(),
+        is_true=proof.is_true,
+        repeats=proof.repeats[:10],
+        music=count_music(rows),
+        final_row=str(touch.final_row),
+    )
+
+
+def splice(
+    repository: MethodRepository,
+    titles: List[str],
+    order: str,
+    calling: str = "",
+) -> Result[SplicedReport]:
+    """Build and prove a spliced touch."""
+    gathered = gather(repository, titles)
+    if not gathered.ok:
+        return Result(failure=gathered.failure)
+    methods = gathered.unwrap()
+
+    stages = {method.stage for method in methods.values()}
+    if len(stages) > 1:
+        return invalid(f"cannot splice across stages {sorted(stages)}")
+
+    clashes = spliceable(list(methods.values()))
+    if clashes:
+        first, second = clashes[0]
+        return invalid(f"{first} and {second} do not splice, their lead heads differ")
+
+    any_method = next(iter(methods.values()))
+    try:
+        touch = build_spliced(methods, order, calls_for(any_method), calling)
+    except BluelineError as error:
+        return invalid(str(error))
+    return succeeded(report_on(touch))
