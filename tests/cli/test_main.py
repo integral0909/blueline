@@ -266,3 +266,40 @@ class TestImportExport:
         runner.invoke(app, ["remove", "Plain Bob Minor"])
         result = runner.invoke(app, ["import", str(out)])
         assert "1 added" in result.stdout
+
+
+class TestSplice:
+    GROUP = [
+        "-m",
+        "Cambridge Surprise Major",
+        "-m",
+        "Yorkshire Surprise Major",
+        "-m",
+        "Superlative Surprise Major",
+        "-m",
+        "Lincolnshire Surprise Major",
+    ]
+
+    def test_seven_leads_come_round_true(self, runner, seeded):
+        result = runner.invoke(app, ["splice", "CYSLCYS", *self.GROUP])
+        assert result.exit_code == 0
+        assert "224" in result.stdout
+
+    def test_it_lists_the_methods_used(self, runner, seeded):
+        result = runner.invoke(app, ["splice", "CYC", *self.GROUP])
+        assert "Cambridge" in result.stdout
+        assert "Yorkshire" in result.stdout
+
+    def test_a_calling_can_be_given(self, runner, seeded):
+        result = runner.invoke(app, ["splice", "CYSL", *self.GROUP, "-c", "p-pp"])
+        assert result.exit_code == 0
+        assert "p-pp" in result.stdout
+
+    def test_methods_that_do_not_splice_exit_invalid(self, runner, seeded):
+        args = [*self.GROUP, "-m", "Bristol Surprise Major"]
+        result = runner.invoke(app, ["splice", "CYSLB", *args])
+        assert result.exit_code == EXIT_FOR[Reason.INVALID]
+
+    def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
+        result = runner.invoke(app, ["splice", "N", "-m", "Nowhere Surprise Major"])
+        assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
