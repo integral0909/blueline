@@ -13,11 +13,12 @@ from typing import Dict, List, Tuple
 from dataclasses import dataclass
 
 from blueline.core.method import Method
-from blueline.core.music import MusicCount, count_music
+from blueline.core.music import MusicCount
 from blueline.core.spliced import Spliced, build_spliced, spliceable
-from blueline.core.truth import Repeat, prove
+from blueline.core.truth import Repeat
 from blueline.db.repository import MethodRepository, to_method
 from blueline.errors import BluelineError
+from blueline.service.reports import Outcome, outcome_of
 from blueline.service.results import Result, invalid, not_found, succeeded
 from blueline.service.touches import calls_for
 
@@ -29,26 +30,44 @@ class SplicedReport:
     order: str
     calling: str
     methods_used: Tuple[str, ...]
-    leads: int
-    length: int
-    comes_round: bool
-    is_true: bool
-    repeats: Tuple[Repeat, ...]
-    music: MusicCount
-    final_row: str
+    outcome: Outcome
+
+    @property
+    def leads(self) -> int:
+        return self.outcome.leads
+
+    @property
+    def length(self) -> int:
+        return self.outcome.length
+
+    @property
+    def comes_round(self) -> bool:
+        return self.outcome.comes_round
+
+    @property
+    def is_true(self) -> bool:
+        return self.outcome.is_true
+
+    @property
+    def repeats(self) -> Tuple[Repeat, ...]:
+        return self.outcome.repeats
+
+    @property
+    def music(self) -> MusicCount:
+        return self.outcome.music
+
+    @property
+    def final_row(self) -> str:
+        return self.outcome.final_row
 
     @property
     def is_ringable(self) -> bool:
-        return self.comes_round and self.is_true
+        return self.outcome.is_ringable
 
     def summary(self) -> str:
         used = len(self.methods_used)
         word = "method" if used == 1 else "methods"
-        if not self.comes_round:
-            return f"{self.length} changes of {used} {word}, does not come round"
-        if not self.is_true:
-            return f"{self.length} changes of {used} {word}, false"
-        return f"{self.length} true changes of {used} {word}"
+        return self.outcome.summarise(f"{used} {word}")
 
 
 def gather(repository: MethodRepository, titles: List[str]) -> Result[Dict[str, Method]]:
@@ -68,19 +87,11 @@ def gather(repository: MethodRepository, titles: List[str]) -> Result[Dict[str, 
 
 
 def report_on(touch: Spliced) -> SplicedReport:
-    rows = touch.rows()[:-1]
-    proof = prove(rows)
     return SplicedReport(
         order=touch.order,
         calling=touch.calling,
         methods_used=tuple(touch.methods_used()),
-        leads=touch.leads,
-        length=touch.length,
-        comes_round=touch.comes_round(),
-        is_true=proof.is_true,
-        repeats=proof.repeats[:10],
-        music=count_music(rows),
-        final_row=str(touch.final_row),
+        outcome=outcome_of(touch.rows(), touch.leads),
     )
 
 
