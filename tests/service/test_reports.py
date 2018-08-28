@@ -1,6 +1,8 @@
 import pytest
 
 from blueline.core.calls import plain_bob_calls
+from blueline.core.music import count_music
+from blueline.core.peals import PEAL, QUARTER, TOUCH, standing_of
 from blueline.core.row import Row
 from blueline.core.touch import parse_calling, plain_course, repeat
 from blueline.service.reports import MAX_REPEATS, Outcome, outcome_of
@@ -88,8 +90,57 @@ class TestSummarise:
             repeats=(),
             music=self._outcome("---").music,
             final_row="123456",
+            standing=standing_of(10, 6),
         )
         assert "0 rows" in made.summarise()
 
     def test_the_what_it_was_of_appears_before_the_verdict(self):
         assert self._outcome("--").summarise("2 methods").startswith("24 changes of 2 methods")
+
+
+class TestStanding:
+    def test_a_plain_course_is_only_a_touch(self):
+        touch = plain_course(PLAIN_BOB_MINOR)
+        assert outcome_of(touch.rows(), touch.leads).standing.counts_as == TOUCH
+
+    def test_the_stage_comes_off_the_rows(self):
+        touch = plain_course(PLAIN_BOB_MINOR)
+        outcome = outcome_of(touch.rows(), touch.leads)
+        assert outcome.standing.length == 60
+
+    def test_a_stage_can_be_given_instead(self):
+        touch = plain_course(PLAIN_BOB_MINOR)
+        outcome = outcome_of(touch.rows(), touch.leads, stage=8)
+        assert outcome.standing.short_by == 1250 - 60
+
+    def test_a_quarter_length_is_named_in_the_summary(self):
+        made = Outcome(
+            leads=1,
+            length=1260,
+            comes_round=True,
+            is_true=True,
+            repeats=(),
+            music=count_music([]),
+            final_row="123456",
+            standing=standing_of(1260, 7),
+        )
+        assert made.standing.counts_as == QUARTER
+        assert "a quarter peal" in made.summarise()
+
+    def test_a_peal_length_is_named_too(self):
+        made = Outcome(
+            leads=1,
+            length=5040,
+            comes_round=True,
+            is_true=True,
+            repeats=(),
+            music=count_music([]),
+            final_row="123456",
+            standing=standing_of(5040, 7),
+        )
+        assert made.standing.counts_as == PEAL
+        assert "a peal" in made.summarise()
+
+    def test_a_short_touch_says_nothing_extra(self):
+        touch = plain_course(PLAIN_BOB_MINOR)
+        assert outcome_of(touch.rows(), touch.leads).summarise() == "60 true changes"

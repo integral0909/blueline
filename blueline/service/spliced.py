@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 from blueline.core.method import Method
 from blueline.core.music import MusicCount
+from blueline.core.peals import Standing
 from blueline.core.spliced import Spliced, build_spliced, spliceable
 from blueline.core.truth import Repeat
 from blueline.db.repository import MethodRepository, to_method
@@ -59,6 +60,10 @@ class SplicedReport:
     @property
     def final_row(self) -> str:
         return self.outcome.final_row
+
+    @property
+    def standing(self) -> Standing:
+        return self.outcome.standing
 
     @property
     def is_ringable(self) -> bool:

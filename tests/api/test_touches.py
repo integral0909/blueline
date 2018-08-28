@@ -113,3 +113,34 @@ class TestSearch:
 
     def test_a_method_that_is_not_there_is_a_404(self, seeded):
         assert seeded.get("/methods/Nowhere Surprise Major/search").status_code == 404
+
+
+class TestStanding:
+    def test_a_short_touch_counts_as_a_touch(self, seeded):
+        body = seeded.post("/methods/Plain Bob Minor/prove", json={"calling": "---"}).json()
+        assert body["standing"]["counts_as"] == "touch"
+
+    def test_it_says_how_far_off_a_quarter_it_is(self, seeded):
+        body = seeded.post("/methods/Plain Bob Minor/prove", json={"calling": "---"}).json()
+        assert body["standing"]["short_by"] == 1260 - 36
+
+    def test_a_quarter_length_counts_as_a_quarter(self, seeded):
+        body = seeded.post(
+            "/methods/Plain Bob Minor/prove", json={"calling": "---", "times": 35}
+        ).json()
+        assert body["length"] == 1260
+        assert body["standing"]["counts_as"] == "quarter peal"
+
+    def test_the_plain_course_carries_a_standing_too(self, seeded):
+        body = seeded.get("/methods/Cambridge Surprise Major/course").json()
+        assert body["standing"]["counts_as"] == "touch"
+
+    def test_a_splice_carries_one_as_well(self, seeded):
+        body = seeded.post(
+            "/splice",
+            json={
+                "titles": ["Cambridge Surprise Major", "Yorkshire Surprise Major"],
+                "order": "CYCYCYC",
+            },
+        ).json()
+        assert "standing" in body

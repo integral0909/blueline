@@ -12,11 +12,12 @@ splice.
 
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from dataclasses import dataclass
 
 from blueline.core.music import MusicCount, count_music
+from blueline.core.peals import Standing, standing_of
 from blueline.core.row import Row
 from blueline.core.truth import Repeat, prove
 
@@ -36,6 +37,7 @@ class Outcome:
     repeats: Tuple[Repeat, ...]
     music: MusicCount
     final_row: str
+    standing: Standing
 
     @property
     def is_ringable(self) -> bool:
@@ -51,19 +53,26 @@ class Outcome:
             count = len(self.repeats)
             word = "row" if count == 1 else "rows"
             return f"{self.length} changes{tail}, false in {count} {word}"
+        counts = self.standing.counts_as
+        if counts != "touch":
+            return f"{self.length} true changes{tail}, a {counts}"
         return f"{self.length} true changes{tail}"
 
 
-def outcome_of(rows: List[Row], leads: int) -> Outcome:
+def outcome_of(rows: List[Row], leads: int, stage: Optional[int] = None) -> Outcome:
     """Ring a run of rows through and say what happened.
 
     The last row is the closing one. Opening and closing on the same row is
     what coming round means, not a repeat, so it is left out of the proving.
+
+    The stage is taken off the rows unless given. It only needs saying where
+    the rows are empty, and they are not allowed to be.
     """
     if not rows:
         raise ValueError("nothing to report on")
     rung = rows[:-1]
     proof = prove(rung)
+    at_stage = stage if stage is not None else rows[0].stage
     return Outcome(
         leads=leads,
         length=len(rung),
@@ -72,4 +81,5 @@ def outcome_of(rows: List[Row], leads: int) -> Outcome:
         repeats=proof.repeats[:MAX_REPEATS],
         music=count_music(rung),
         final_row=str(rows[-1]),
+        standing=standing_of(len(rung), at_stage),
     )
