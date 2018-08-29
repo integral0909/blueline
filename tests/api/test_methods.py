@@ -151,3 +151,17 @@ class TestPlaceBells:
 
     def test_a_method_that_is_not_there_is_a_404(self, seeded):
         assert seeded.get("/methods/Nowhere Surprise Major/place-bells").status_code == 404
+
+
+class TestLineWork:
+    def test_the_line_carries_the_work(self, seeded):
+        body = seeded.get("/methods/Plain Bob Minor/line/1").json()
+        assert set(body["work"]) == {"leads", "lies", "dodges", "places"}
+
+    def test_the_treble_in_plain_bob_does_not_dodge(self, seeded):
+        body = seeded.get("/methods/Plain Bob Minor/line/1").json()
+        assert body["work"]["dodges"] == []
+
+    def test_the_treble_in_cambridge_does(self, seeded):
+        body = seeded.get("/methods/Cambridge Surprise Major/line/1").json()
+        assert len(body["work"]["dodges"]) == 8

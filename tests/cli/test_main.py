@@ -303,3 +303,35 @@ class TestSplice:
     def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
         result = runner.invoke(app, ["splice", "N", "-m", "Nowhere Surprise Major"])
         assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestLineWork:
+    def test_it_counts_the_work(self, runner, seeded):
+        result = runner.invoke(app, ["line", "Cambridge Surprise Minor", "1"])
+        assert result.exit_code == 0
+        assert "dodges" in result.stdout
+
+    def test_a_plain_treble_has_no_dodges_to_report(self, runner, seeded):
+        result = runner.invoke(app, ["line", "Plain Bob Minor", "1"])
+        assert "dodges" not in result.stdout
+
+
+class TestLineWorkDetail:
+    def test_it_names_each_kind_of_work_it_found(self, runner, seeded):
+        result = runner.invoke(app, ["line", "Cambridge Surprise Minor", "1"])
+        for word in ("leads", "lies", "dodges"):
+            assert word in result.stdout
+
+    def test_a_bell_with_no_work_of_a_kind_does_not_mention_it(self, runner, seeded):
+        result = runner.invoke(app, ["line", "Plain Bob Minor", "1"])
+        assert "dodges" not in result.stdout
+
+    def test_the_counts_match_what_the_service_says(self, runner, seeded):
+        from blueline.api import deps
+        from blueline.db.repository import MethodRepository
+        from blueline.service import methods as service
+
+        with deps.get_factory()() as session:
+            view = service.line(MethodRepository(session), "Cambridge Surprise Minor", 1).unwrap()
+        result = runner.invoke(app, ["line", "Cambridge Surprise Minor", "1"])
+        assert f"{len(view.work['dodges'])} dodges" in result.stdout
