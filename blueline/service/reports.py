@@ -18,6 +18,7 @@ from dataclasses import dataclass
 
 from blueline.core.music import MusicCount, count_music
 from blueline.core.peals import Standing, standing_of
+from blueline.core.rounds import RoundsAt, comes_round_early, ends_at_a_lead_end
 from blueline.core.row import Row
 from blueline.core.truth import Repeat, prove
 
@@ -38,6 +39,10 @@ class Outcome:
     music: MusicCount
     final_row: str
     standing: Standing
+    #: Where rounds turned up before the end, if it did.
+    early_rounds: Optional[RoundsAt]
+    #: Whether the touch finishes somewhere a band could actually stand.
+    stands_at_a_lead_end: bool
 
     @property
     def is_ringable(self) -> bool:
@@ -47,6 +52,11 @@ class Outcome:
     def summarise(self, of_what: str = "") -> str:
         """One line saying how it went, with an optional what it was of."""
         tail = f" of {of_what}" if of_what else ""
+        # Coming round early is reported ahead of falseness. The touch stops
+        # there whatever else is wrong with it, so it is the thing to fix
+        # first.
+        if self.early_rounds is not None:
+            return f"{self.length} changes{tail}, comes round early at {self.early_rounds}"
         if not self.comes_round:
             return f"{self.length} changes{tail}, does not come round"
         if not self.is_true:
@@ -59,20 +69,28 @@ class Outcome:
         return f"{self.length} true changes{tail}"
 
 
-def outcome_of(rows: List[Row], leads: int, stage: Optional[int] = None) -> Outcome:
+def outcome_of(
+    rows: List[Row],
+    leads: int,
+    stage: Optional[int] = None,
+    lead_length: Optional[int] = None,
+) -> Outcome:
     """Ring a run of rows through and say what happened.
 
     The last row is the closing one. Opening and closing on the same row is
     what coming round means, not a repeat, so it is left out of the proving.
 
     The stage is taken off the rows unless given. It only needs saying where
-    the rows are empty, and they are not allowed to be.
+    the rows are empty, and they are not allowed to be. The lead length is
+    worked out from the lead count for the same reason, and can be given where
+    the leads are not all the same length, which a spliced touch's are not.
     """
     if not rows:
         raise ValueError("nothing to report on")
     rung = rows[:-1]
     proof = prove(rung)
     at_stage = stage if stage is not None else rows[0].stage
+    per_lead = lead_length or (len(rung) // leads if leads else len(rung)) or 1
     return Outcome(
         leads=leads,
         length=len(rung),
@@ -82,4 +100,6 @@ def outcome_of(rows: List[Row], leads: int, stage: Optional[int] = None) -> Outc
         music=count_music(rung),
         final_row=str(rows[-1]),
         standing=standing_of(len(rung), at_stage),
+        early_rounds=comes_round_early(rows, per_lead),
+        stands_at_a_lead_end=ends_at_a_lead_end(rows, per_lead),
     )

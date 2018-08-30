@@ -11,7 +11,8 @@ trying to fix a composition. What they want to know is which rows came round
 twice and where, so the report carries that.
 
 Rounds is a special case. Every touch opens and closes on it and that is not
-falseness, so the closing row is left out before anything is counted.
+falseness, so the closing row is left out before anything is counted. Where
+rounds comes up is a question of its own and core/rounds answers it.
 """
 
 from __future__ import annotations
@@ -95,16 +96,6 @@ def rung_rows(touch: Touch) -> List[Row]:
 
 def prove_touch(touch: Touch) -> TruthReport:
     return prove(rung_rows(touch))
-
-
-def rounds_at(rows: List[Row]) -> Tuple[int, ...]:
-    """Where rounds comes up, so a touch that comes round early is spotted."""
-    return tuple(position for position, row in enumerate(rows, start=1) if row.is_rounds)
-
-
-def comes_round_early(touch: Touch) -> bool:
-    """Whether rounds turns up before the end, which stops the touch there."""
-    return bool(rounds_at(rung_rows(touch)[1:]))
 
 
 def extent_length(stage: int) -> int:

@@ -3,13 +3,11 @@ from blueline.core.row import Row
 from blueline.core.touch import parse_calling, plain_course, repeat
 from blueline.core.truth import (
     Repeat,
-    comes_round_early,
     extent_length,
     is_extent,
     prove,
     prove_against,
     prove_touch,
-    rounds_at,
     rung_rows,
 )
 from tests.methods import (
@@ -119,21 +117,6 @@ class TestProveTouch:
     def test_every_row_repeats_exactly_twice(self):
         touch = repeat(plain_course(PLAIN_BOB_MINOR), 2)
         assert all(rep.times == 2 for rep in prove_touch(touch).repeats)
-
-
-class TestRoundsEarly:
-    def test_finds_rounds_where_it_falls(self):
-        rows = [Row.rounds(6), Row.parse("214365"), Row.rounds(6)]
-        assert rounds_at(rows) == (1, 3)
-
-    def test_finds_none_where_there_is_none(self):
-        assert rounds_at([Row.parse("214365")]) == ()
-
-    def test_a_plain_course_does_not_come_round_early(self):
-        assert not comes_round_early(plain_course(PLAIN_BOB_MINOR))
-
-    def test_ringing_a_course_twice_does_come_round_early(self):
-        assert comes_round_early(repeat(plain_course(PLAIN_BOB_MINOR), 2))
 
 
 class TestProveAgainst:

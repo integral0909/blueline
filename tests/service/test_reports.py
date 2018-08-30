@@ -8,6 +8,29 @@ from blueline.core.touch import parse_calling, plain_course, repeat
 from blueline.service.reports import MAX_REPEATS, Outcome, outcome_of
 from tests.methods import PLAIN_BOB_DOUBLES, PLAIN_BOB_MINOR
 
+
+def an_outcome(**over) -> Outcome:
+    """An outcome with everything filled in, for testing the wording.
+
+    Built by hand rather than by ringing something, because the wording has to
+    be checked at lengths no method in the set happens to produce.
+    """
+    fields = {
+        "leads": 1,
+        "length": 10,
+        "comes_round": True,
+        "is_true": True,
+        "repeats": (),
+        "music": count_music([]),
+        "final_row": "123456",
+        "standing": standing_of(10, 6),
+        "early_rounds": None,
+        "stands_at_a_lead_end": True,
+    }
+    fields.update(over)
+    return Outcome(**fields)
+
+
 PB5 = plain_bob_calls(5)
 PB6 = plain_bob_calls(6)
 
@@ -77,21 +100,19 @@ class TestSummarise:
         assert "does not come round" in self._outcome("--").summarise()
 
     def test_a_false_one_says_how_many_rows_repeat(self):
+        # Built by hand. Ringing a course twice is false and also comes round
+        # early, and early rounds is reported ahead of falseness.
+        made = an_outcome(is_true=False, repeats=(), length=120)
+        assert "false in 0 rows" in made.summarise()
+
+    def test_early_rounds_is_reported_ahead_of_falseness(self):
         touch = repeat(plain_course(PLAIN_BOB_DOUBLES), 2)
         outcome = outcome_of(touch.rows(), touch.leads)
-        assert "false in" in outcome.summarise()
+        assert not outcome.is_true
+        assert "comes round early" in outcome.summarise()
 
     def test_one_repeated_row_reads_as_singular(self):
-        made = Outcome(
-            leads=1,
-            length=10,
-            comes_round=True,
-            is_true=False,
-            repeats=(),
-            music=self._outcome("---").music,
-            final_row="123456",
-            standing=standing_of(10, 6),
-        )
+        made = an_outcome(is_true=False)
         assert "0 rows" in made.summarise()
 
     def test_the_what_it_was_of_appears_before_the_verdict(self):
@@ -114,33 +135,42 @@ class TestStanding:
         assert outcome.standing.short_by == 1250 - 60
 
     def test_a_quarter_length_is_named_in_the_summary(self):
-        made = Outcome(
-            leads=1,
-            length=1260,
-            comes_round=True,
-            is_true=True,
-            repeats=(),
-            music=count_music([]),
-            final_row="123456",
-            standing=standing_of(1260, 7),
-        )
+        made = an_outcome(length=1260, standing=standing_of(1260, 7))
         assert made.standing.counts_as == QUARTER
         assert "a quarter peal" in made.summarise()
 
     def test_a_peal_length_is_named_too(self):
-        made = Outcome(
-            leads=1,
-            length=5040,
-            comes_round=True,
-            is_true=True,
-            repeats=(),
-            music=count_music([]),
-            final_row="123456",
-            standing=standing_of(5040, 7),
-        )
+        made = an_outcome(length=5040, standing=standing_of(5040, 7))
         assert made.standing.counts_as == PEAL
         assert "a peal" in made.summarise()
 
     def test_a_short_touch_says_nothing_extra(self):
         touch = plain_course(PLAIN_BOB_MINOR)
         assert outcome_of(touch.rows(), touch.leads).summarise() == "60 true changes"
+
+
+class TestEarlyRounds:
+    def test_a_plain_course_does_not_come_round_early(self):
+        touch = plain_course(PLAIN_BOB_MINOR)
+        outcome = outcome_of(touch.rows(), touch.leads)
+        assert outcome.early_rounds is None
+
+    def test_ringing_a_course_twice_does(self):
+        touch = repeat(plain_course(PLAIN_BOB_MINOR), 2)
+        outcome = outcome_of(touch.rows(), touch.leads)
+        assert outcome.early_rounds is not None
+        assert outcome.early_rounds.row == 60
+
+    def test_the_summary_says_so_before_anything_else(self):
+        touch = repeat(plain_course(PLAIN_BOB_MINOR), 2)
+        outcome = outcome_of(touch.rows(), touch.leads)
+        assert "comes round early" in outcome.summarise()
+
+    def test_a_plain_course_stands_at_a_lead_end(self):
+        touch = plain_course(PLAIN_BOB_MINOR)
+        assert outcome_of(touch.rows(), touch.leads).stands_at_a_lead_end
+
+    def test_a_lead_length_can_be_given(self):
+        touch = plain_course(PLAIN_BOB_MINOR)
+        outcome = outcome_of(touch.rows(), touch.leads, lead_length=12)
+        assert outcome.stands_at_a_lead_end
