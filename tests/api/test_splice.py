@@ -63,3 +63,43 @@ class TestSplice:
     def test_it_counts_the_music(self, seeded):
         body = seeded.post("/splice", json={"titles": GROUP, "order": "CYSLCYS"}).json()
         assert body["music"]["named"]["rounds"] == 1
+
+
+class TestSpliceReporting:
+    def test_it_says_what_the_length_counts_as(self, seeded):
+        body = seeded.post(
+            "/splice",
+            json={
+                "titles": ["Cambridge Surprise Major", "Yorkshire Surprise Major"],
+                "order": "CYCYCYC",
+            },
+        ).json()
+        assert body["standing"]["counts_as"] == "touch"
+
+    def test_a_splice_that_runs_to_the_end_reports_no_early_rounds(self, seeded):
+        body = seeded.post(
+            "/splice",
+            json={
+                "titles": ["Cambridge Surprise Major", "Yorkshire Surprise Major"],
+                "order": "CYCYCYC",
+            },
+        ).json()
+        assert body["early_rounds"] is None
+
+    def test_one_that_comes_round_early_says_where(self, seeded):
+        body = seeded.post(
+            "/splice",
+            json={
+                "titles": ["Cambridge Surprise Major", "Yorkshire Surprise Major"],
+                "order": "CYCYCYCCYCYCYC",
+            },
+        ).json()
+        assert body["early_rounds"] is not None
+        assert body["early_rounds"]["at_lead_end"]
+
+    def test_it_stands_at_a_lead_end(self, seeded):
+        body = seeded.post(
+            "/splice",
+            json={"titles": ["Cambridge Surprise Major"], "order": "CCCCCCC"},
+        ).json()
+        assert body["stands_at_a_lead_end"]

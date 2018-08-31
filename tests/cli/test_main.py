@@ -335,3 +335,36 @@ class TestLineWorkDetail:
             view = service.line(MethodRepository(session), "Cambridge Surprise Minor", 1).unwrap()
         result = runner.invoke(app, ["line", "Cambridge Surprise Minor", "1"])
         assert f"{len(view.work['dodges'])} dodges" in result.stdout
+
+
+class TestEarlyRounds:
+    def test_a_touch_that_comes_round_early_says_so(self, runner, seeded):
+        result = runner.invoke(app, ["prove", "Plain Bob Minor", "---", "-t", "2"])
+        assert result.exit_code == 0
+        assert "comes round early" in result.stdout
+
+    def test_it_names_the_lead(self, runner, seeded):
+        result = runner.invoke(app, ["prove", "Plain Bob Minor", "---", "-t", "2"])
+        assert "lead 3" in result.stdout
+
+    def test_a_touch_that_runs_to_the_end_says_nothing(self, runner, seeded):
+        result = runner.invoke(app, ["prove", "Plain Bob Minor", "---"])
+        assert "comes round early" not in result.stdout
+
+    def test_a_splice_reports_it_as_well(self, runner, seeded):
+        args = [
+            "-m",
+            "Cambridge Surprise Major",
+            "-m",
+            "Yorkshire Surprise Major",
+        ]
+        result = runner.invoke(app, ["splice", "CYCYCYCCYCYCYC", *args])
+        assert result.exit_code == 0
+        assert "comes round early" in result.stdout
+
+
+class TestSpliceLeadLength:
+    def test_a_splice_of_one_method_matches_proving_it(self, runner, seeded):
+        spliced = runner.invoke(app, ["splice", "CCCCCCC", "-m", "Cambridge Surprise Major"])
+        assert spliced.exit_code == 0
+        assert "224" in spliced.stdout

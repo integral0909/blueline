@@ -144,3 +144,32 @@ class TestStanding:
             },
         ).json()
         assert "standing" in body
+
+
+class TestEarlyRounds:
+    def test_a_touch_that_runs_to_the_end_reports_nothing(self, seeded):
+        body = seeded.post("/methods/Plain Bob Minor/prove", json={"calling": "---"}).json()
+        assert body["early_rounds"] is None
+
+    def test_a_touch_that_comes_round_early_says_where(self, seeded):
+        body = seeded.post(
+            "/methods/Plain Bob Minor/prove", json={"calling": "---", "times": 2}
+        ).json()
+        assert body["early_rounds"]["row"] == 36
+        assert body["early_rounds"]["lead"] == 3
+        assert body["early_rounds"]["at_lead_end"]
+
+    def test_the_summary_leads_with_it(self, seeded):
+        body = seeded.post(
+            "/methods/Plain Bob Minor/prove", json={"calling": "---", "times": 2}
+        ).json()
+        assert "comes round early" in body["summary"]
+
+    def test_a_touch_stands_at_a_lead_end(self, seeded):
+        body = seeded.post("/methods/Plain Bob Minor/prove", json={"calling": "---"}).json()
+        assert body["stands_at_a_lead_end"]
+
+    def test_a_plain_course_reports_it_too(self, seeded):
+        body = seeded.get("/methods/Plain Bob Minor/course").json()
+        assert body["early_rounds"] is None
+        assert body["stands_at_a_lead_end"]
