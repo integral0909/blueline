@@ -1,8 +1,16 @@
+from datetime import date
+
 import pytest
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from blueline.db.models import Base, StoredComposition, StoredMethod, now
+from blueline.db.models import (
+    Base,
+    StoredComposition,
+    StoredMethod,
+    StoredPerformance,
+    now,
+)
 from blueline.db.session import session_scope
 
 
@@ -124,8 +132,81 @@ class TestSessionScope:
 
 
 class TestSchema:
-    def test_both_tables_are_there(self):
-        assert set(Base.metadata.tables) == {"methods", "compositions"}
+    def test_every_table_is_there(self):
+        assert set(Base.metadata.tables) == {"methods", "compositions", "performances"}
 
     def test_the_title_is_indexed_because_everything_looks_up_by_it(self):
         assert Base.metadata.tables["methods"].c.title.index
+
+
+class TestStoringPerformances:
+    def a_performance(self, **over) -> StoredPerformance:
+        fields = {
+            "title": "Cambridge Surprise Major",
+            "stage": 8,
+            "length": 5024,
+            "rang_on": date(2023, 3, 18),
+            "place": "St Andrew, Marchgate",
+            "composer": "F Ahman",
+            "ringers": "\n".join(["Ann", "Bob", "Cara", "Dan", "Eve", "Finn", "Gus", "Hana"]),
+            "conductor": 8,
+        }
+        fields.update(over)
+        return StoredPerformance(**fields)
+
+    def test_one_can_be_stored_without_a_method(self, factory):
+        with session_scope(factory) as session:
+            session.add(self.a_performance())
+        with session_scope(factory) as session:
+            found = session.scalars(select(StoredPerformance)).one()
+            assert found.method_id is None
+            assert found.length == 5024
+
+    def test_it_can_hang_off_a_method(self, factory):
+        with session_scope(factory) as session:
+            method = a_method()
+            session.add(method)
+            session.flush()
+            session.add(self.a_performance(method_id=method.id))
+        with session_scope(factory) as session:
+            found = session.scalars(select(StoredPerformance)).one()
+            assert found.method.title == "Cambridge Surprise Major"
+
+    def test_deleting_the_method_leaves_the_performance_behind(self, factory):
+        # Somebody rang that peal whether or not the library still holds the
+        # method, so the link goes null rather than the row going away.
+        with session_scope(factory) as session:
+            method = a_method()
+            session.add(method)
+            session.flush()
+            session.add(self.a_performance(method_id=method.id))
+        with session_scope(factory) as session:
+            session.delete(session.scalars(select(StoredMethod)).one())
+        with session_scope(factory) as session:
+            found = session.scalars(select(StoredPerformance)).one()
+            assert found.method_id is None
+
+    def test_the_band_is_stored_as_lines(self, factory):
+        with session_scope(factory) as session:
+            session.add(self.a_performance())
+        with session_scope(factory) as session:
+            found = session.scalars(select(StoredPerformance)).one()
+            assert found.ringers.splitlines() == [
+                "Ann",
+                "Bob",
+                "Cara",
+                "Dan",
+                "Eve",
+                "Finn",
+                "Gus",
+                "Hana",
+            ]
+
+    def test_the_date_survives(self, factory):
+        with session_scope(factory) as session:
+            session.add(self.a_performance())
+        with session_scope(factory) as session:
+            assert session.scalars(select(StoredPerformance)).one().rang_on == date(2023, 3, 18)
+
+    def test_it_reads_back_as_its_length_and_title(self):
+        assert repr(self.a_performance()) == ("StoredPerformance(5024 'Cambridge Surprise Major')")

@@ -11,12 +11,18 @@ from blueline.db.models import Base
 from blueline.db.session import MEMORY_URL, create_all, make_engine
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-INITIAL = ROOT / "migrations" / "versions" / "0001_initial.py"
+VERSIONS = ROOT / "migrations" / "versions"
 
 
 @pytest.fixture(scope="module")
 def migration() -> str:
-    return INITIAL.read_text()
+    """Every migration joined up.
+
+    The checks are about what the schema ends up as, not about which revision
+    put each piece there, and reading only the first one meant every table
+    added afterwards looked missing.
+    """
+    return "\n".join(path.read_text() for path in sorted(VERSIONS.glob("*.py")))
 
 
 class TestSetup:
