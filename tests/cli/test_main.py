@@ -368,3 +368,78 @@ class TestSpliceLeadLength:
         spliced = runner.invoke(app, ["splice", "CCCCCCC", "-m", "Cambridge Surprise Major"])
         assert spliced.exit_code == 0
         assert "224" in spliced.stdout
+
+
+class TestPerformances:
+    EIGHT = [
+        "-r",
+        "Ann",
+        "-r",
+        "Bob",
+        "-r",
+        "Cara",
+        "-r",
+        "Dan",
+        "-r",
+        "Eve",
+        "-r",
+        "Finn",
+        "-r",
+        "Gus",
+        "-r",
+        "Hana",
+    ]
+
+    def _rang(self, runner, **over):
+        args = [
+            "rang",
+            over.get("title", "Cambridge Surprise Major"),
+            *self.EIGHT,
+            "-s",
+            str(over.get("stage", 8)),
+            "-l",
+            str(over.get("length", 5024)),
+            "--on",
+            over.get("on", "2023-03-18"),
+            "-p",
+            over.get("place", "St Andrew, Marchgate"),
+            "-c",
+            over.get("conductor", "Hana"),
+        ]
+        return runner.invoke(app, args)
+
+    def test_it_writes_one_up(self, runner, seeded):
+        result = self._rang(runner)
+        assert result.exit_code == 0
+        assert "St Andrew, Marchgate, 18 March 2023" in result.stdout
+
+    def test_the_board_lists_the_band(self, runner, seeded):
+        result = self._rang(runner)
+        assert "1 Ann" in result.stdout
+        assert "8 Hana (c)" in result.stdout
+
+    def test_it_is_listed_afterwards(self, runner, seeded):
+        self._rang(runner)
+        listed = runner.invoke(app, ["rung"])
+        assert "1 performances" in listed.stdout
+
+    def test_a_bad_date_exits_invalid(self, runner, seeded):
+        result = self._rang(runner, on="last tuesday")
+        assert result.exit_code == EXIT_FOR[Reason.INVALID]
+
+    def test_a_band_too_small_for_the_stage_exits_invalid(self, runner, seeded):
+        result = self._rang(runner, stage=12)
+        assert result.exit_code == EXIT_FOR[Reason.INVALID]
+
+    def test_listing_filters_by_place(self, runner, seeded):
+        self._rang(runner)
+        self._rang(runner, place="St Mary, Ashcombe")
+        found = runner.invoke(app, ["rung", "-p", "Ashcombe"])
+        assert "1 performances" in found.stdout
+
+    def test_listing_filters_by_ringer(self, runner, seeded):
+        self._rang(runner)
+        assert "1 performances" in runner.invoke(app, ["rung", "-r", "Hana"]).stdout
+
+    def test_an_empty_store_lists_nothing(self, runner, seeded):
+        assert "0 performances" in runner.invoke(app, ["rung"]).stdout
