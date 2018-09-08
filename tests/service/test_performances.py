@@ -143,3 +143,80 @@ class TestFetchAndSearch:
     def test_a_search_matching_nothing_succeeds_with_nothing(self, performances, repository):
         record(performances, repository)
         assert service.search(performances, place="Nowhere").unwrap() == []
+
+
+class TestStatistics:
+    def test_an_empty_store_totals_nothing(self, performances):
+        totals = service.statistics(performances).unwrap()
+        assert totals.performances == 0
+        assert totals.summary() == "nothing rung"
+
+    def test_it_counts_what_is_there(self, performances, repository):
+        record(performances, repository)
+        record(performances, repository, length=1250, title="Yorkshire Surprise Major")
+        totals = service.statistics(performances).unwrap()
+        assert totals.performances == 2
+        assert totals.peals == 1
+        assert totals.quarters == 1
+
+    def test_it_totals_the_changes(self, performances, repository):
+        record(performances, repository)
+        record(performances, repository, length=1250)
+        assert service.statistics(performances).unwrap().changes == 6274
+
+    def test_it_can_be_narrowed_to_a_place(self, performances, repository):
+        record(performances, repository)
+        record(performances, repository, place="St Mary, Ashcombe")
+        totals = service.statistics(performances, place="Ashcombe").unwrap()
+        assert totals.performances == 1
+
+    def test_it_can_be_narrowed_to_a_ringer(self, performances, repository):
+        record(performances, repository)
+        record(
+            performances,
+            repository,
+            ringers=["Ivy", "Jed", "Kit", "Lex", "Mo", "Nell", "Opal", "Pia"],
+            conductor="Pia",
+        )
+        assert service.statistics(performances, ringer="Ann").unwrap().performances == 1
+
+    def test_it_counts_the_places(self, performances, repository):
+        record(performances, repository)
+        record(performances, repository, place="St Mary, Ashcombe")
+        assert service.statistics(performances).unwrap().places == 2
+
+    def test_it_finds_the_commonest_method(self, performances, repository):
+        record(performances, repository)
+        record(performances, repository)
+        record(performances, repository, title="Yorkshire Surprise Major")
+        assert service.statistics(performances).unwrap().most_rung_method() == (
+            "Cambridge Surprise Major",
+            2,
+        )
+
+
+class TestLeaderboards:
+    def test_the_top_ringers_come_back_most_first(self, performances, repository):
+        record(performances, repository)
+        record(
+            performances,
+            repository,
+            ringers=["Ann", "Ivy", "Jed", "Kit", "Lex", "Mo", "Nell", "Opal"],
+            conductor="Ann",
+        )
+        board = service.top_ringers(performances).unwrap()
+        assert board[0] == ("Ann", 2)
+
+    def test_it_can_be_capped(self, performances, repository):
+        record(performances, repository)
+        assert len(service.top_ringers(performances, top=3).unwrap()) == 3
+
+    def test_the_top_methods_come_back_most_first(self, performances, repository):
+        record(performances, repository)
+        record(performances, repository)
+        record(performances, repository, title="Yorkshire Surprise Major")
+        board = service.top_methods(performances).unwrap()
+        assert board[0] == ("Cambridge Surprise Major", 2)
+
+    def test_an_empty_store_has_an_empty_board(self, performances):
+        assert service.top_ringers(performances).unwrap() == []

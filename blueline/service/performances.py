@@ -19,6 +19,7 @@ from datetime import date
 
 from blueline.core.bands import Band, band_of
 from blueline.core.performance import Performance
+from blueline.core.statistics import Totals, leaderboard, totals_of
 from blueline.db.models import StoredPerformance
 from blueline.db.repository import (
     MethodRepository,
@@ -141,3 +142,37 @@ def search(
         place=place, title=title, stage=stage, min_length=min_length, ringer=ringer
     )
     return succeeded([view_of(stored) for stored in found])
+
+
+def statistics(
+    performances: PerformanceRepository,
+    place: Optional[str] = None,
+    ringer: Optional[str] = None,
+) -> Result[Totals]:
+    """Totals over the performances matching what was asked for.
+
+    The same filters the listing takes, so a band can ask what they have rung
+    at one tower rather than only what everybody has rung everywhere.
+    """
+    found = performances.search(place=place, ringer=ringer)
+    return succeeded(totals_of([to_performance(stored) for stored in found]))
+
+
+def top_ringers(
+    performances: PerformanceRepository,
+    top: int = 10,
+) -> Result[List[Tuple[str, int]]]:
+    totals = statistics(performances)
+    if not totals.ok:
+        return Result(failure=totals.failure)
+    return succeeded(leaderboard(totals.unwrap().by_ringer, top=top))
+
+
+def top_methods(
+    performances: PerformanceRepository,
+    top: int = 10,
+) -> Result[List[Tuple[str, int]]]:
+    totals = statistics(performances)
+    if not totals.ok:
+        return Result(failure=totals.failure)
+    return succeeded(leaderboard(totals.unwrap().by_method, top=top))
