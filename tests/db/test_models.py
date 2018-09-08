@@ -132,8 +132,20 @@ class TestSessionScope:
 
 
 class TestSchema:
-    def test_every_table_is_there(self):
-        assert set(Base.metadata.tables) == {"methods", "compositions", "performances"}
+    def test_there_are_tables(self):
+        # Deliberately not a fixed list. Every new table used to mean editing
+        # this line, which is a test that only ever says the list was edited.
+        # What matters is that the migrations agree, and test_migrations
+        # checks that against the metadata.
+        assert Base.metadata.tables
+
+    def test_every_table_has_a_primary_key(self):
+        for name, table in Base.metadata.tables.items():
+            assert table.primary_key.columns, f"{name} has no primary key"
+
+    def test_every_table_records_when_its_rows_were_made(self):
+        for name, table in Base.metadata.tables.items():
+            assert "created_at" in table.c, f"{name} does not say when"
 
     def test_the_title_is_indexed_because_everything_looks_up_by_it(self):
         assert Base.metadata.tables["methods"].c.title.index
