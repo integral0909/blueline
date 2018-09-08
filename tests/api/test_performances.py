@@ -118,3 +118,65 @@ class TestListing:
 
     def test_a_stage_out_of_range_is_rejected(self, seeded):
         assert seeded.get("/performances", params={"stage": 99}).status_code == 422
+
+
+class TestTotals:
+    def test_an_empty_store_totals_nothing(self, seeded):
+        body = seeded.get("/performances/totals").json()
+        assert body["performances"] == 0
+        assert body["summary"] == "nothing rung"
+
+    def test_it_counts_what_is_there(self, seeded):
+        seeded.post("/performances", json=a_performance())
+        seeded.post("/performances", json=a_performance(length=1250))
+        body = seeded.get("/performances/totals").json()
+        assert body["performances"] == 2
+        assert body["peals"] == 1
+        assert body["quarters"] == 1
+
+    def test_the_three_kinds_add_up(self, seeded):
+        seeded.post("/performances", json=a_performance())
+        seeded.post("/performances", json=a_performance(length=224))
+        body = seeded.get("/performances/totals").json()
+        assert body["peals"] + body["quarters"] + body["touches"] == body["performances"]
+
+    def test_it_totals_the_changes(self, seeded):
+        seeded.post("/performances", json=a_performance())
+        assert seeded.get("/performances/totals").json()["changes"] == 5024
+
+    def test_it_gives_the_dates_it_spans(self, seeded):
+        seeded.post("/performances", json=a_performance(rang_on="2023-01-05"))
+        seeded.post("/performances", json=a_performance(rang_on="2023-06-01"))
+        body = seeded.get("/performances/totals").json()
+        assert body["first"] == "2023-01-05"
+        assert body["last"] == "2023-06-01"
+
+    def test_it_gives_a_leaderboard_of_ringers(self, seeded):
+        seeded.post("/performances", json=a_performance())
+        body = seeded.get("/performances/totals").json()
+        assert body["top_ringers"][0]["count"] == 1
+
+    def test_it_gives_a_leaderboard_of_methods(self, seeded):
+        seeded.post("/performances", json=a_performance())
+        seeded.post("/performances", json=a_performance())
+        body = seeded.get("/performances/totals").json()
+        assert body["top_methods"][0] == {"name": "Cambridge Surprise Major", "count": 2}
+
+    def test_the_leaderboards_can_be_capped(self, seeded):
+        seeded.post("/performances", json=a_performance())
+        body = seeded.get("/performances/totals", params={"top": 3}).json()
+        assert len(body["top_ringers"]) == 3
+
+    def test_it_can_be_narrowed_to_a_place(self, seeded):
+        seeded.post("/performances", json=a_performance())
+        seeded.post("/performances", json=a_performance(place="St Mary, Ashcombe"))
+        body = seeded.get("/performances/totals", params={"place": "Ashcombe"}).json()
+        assert body["performances"] == 1
+
+    def test_it_breaks_down_by_stage(self, seeded):
+        seeded.post("/performances", json=a_performance())
+        assert seeded.get("/performances/totals").json()["by_stage"] == {"8": 1}
+
+    def test_totals_is_not_read_as_a_performance_id(self, seeded):
+        # It sits above the parameterised route, or it comes back a 422.
+        assert seeded.get("/performances/totals").status_code == 200

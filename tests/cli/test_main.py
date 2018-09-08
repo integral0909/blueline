@@ -443,3 +443,37 @@ class TestPerformances:
 
     def test_an_empty_store_lists_nothing(self, runner, seeded):
         assert "0 performances" in runner.invoke(app, ["rung"]).stdout
+
+
+class TestTotals:
+    def test_an_empty_store_says_nothing_was_rung(self, runner, seeded):
+        result = runner.invoke(app, ["totals"])
+        assert result.exit_code == 0
+        assert "nothing rung" in result.stdout
+
+    def test_it_counts_what_is_there(self, runner, seeded):
+        TestPerformances()._rang(runner)
+        result = runner.invoke(app, ["totals"])
+        assert "performances" in result.stdout
+        assert "5024" in result.stdout
+
+    def test_it_lists_the_methods(self, runner, seeded):
+        TestPerformances()._rang(runner)
+        result = runner.invoke(app, ["totals"])
+        assert "methods" in result.stdout
+
+    def test_it_lists_the_ringers(self, runner, seeded):
+        TestPerformances()._rang(runner)
+        result = runner.invoke(app, ["totals"])
+        assert "ringers" in result.stdout
+        assert "Ann" in result.stdout
+
+    def test_it_can_be_narrowed_to_a_place(self, runner, seeded):
+        TestPerformances()._rang(runner)
+        TestPerformances()._rang(runner, place="St Mary, Ashcombe")
+        result = runner.invoke(app, ["totals", "-p", "Ashcombe"])
+        assert result.exit_code == 0
+
+    def test_an_empty_store_lists_no_leaderboards(self, runner, seeded):
+        result = runner.invoke(app, ["totals"])
+        assert "Ann" not in result.stdout
