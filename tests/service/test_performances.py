@@ -220,3 +220,59 @@ class TestLeaderboards:
 
     def test_an_empty_store_has_an_empty_board(self, performances):
         assert service.top_ringers(performances).unwrap() == []
+
+
+class TestTowerLink:
+    def _towers(self, repository):
+        from blueline.db.repository import TowerRepository
+        from blueline.service import towers as tower_service
+
+        store = TowerRepository(repository.session)
+        tower_service.add(store, "St Andrew, Marchgate", 8, "23-1-14")
+        tower_service.add(store, "St Mary, Ashcombe", 6, "8-0-0")
+        return store
+
+    def test_it_links_the_tower_when_the_place_matches(self, performances, repository):
+        towers = self._towers(repository)
+        view = record(performances, repository, towers=towers).unwrap()
+        assert view.tower == "St Andrew, Marchgate"
+
+    def test_a_place_with_no_tower_is_left_unlinked(self, performances, repository):
+        towers = self._towers(repository)
+        view = record(performances, repository, place="Somewhere else", towers=towers).unwrap()
+        assert view.tower is None
+
+    def test_no_tower_store_at_all_still_works(self, performances, repository):
+        assert record(performances, repository).unwrap().tower is None
+
+    def test_a_tower_too_small_for_the_stage_is_refused(self, performances, repository):
+        towers = self._towers(repository)
+        result = record(
+            performances,
+            repository,
+            place="St Mary, Ashcombe",
+            stage=8,
+            towers=towers,
+        )
+        assert result.failure.reason is Reason.INVALID
+        assert "cannot ring 8" in result.failure.detail
+
+    def test_nothing_is_stored_when_the_tower_refuses(self, performances, repository):
+        towers = self._towers(repository)
+        record(performances, repository, place="St Mary, Ashcombe", stage=8, towers=towers)
+        assert performances.count() == 0
+
+    def test_a_tower_big_enough_is_accepted(self, performances, repository):
+        towers = self._towers(repository)
+        result = record(
+            performances,
+            repository,
+            place="St Mary, Ashcombe",
+            stage=6,
+            length=720,
+            ringers=["Ann", "Bob", "Cara", "Dan", "Eve", "Finn"],
+            conductor="Ann",
+            towers=towers,
+        )
+        assert result.ok
+        assert result.unwrap().tower == "St Mary, Ashcombe"

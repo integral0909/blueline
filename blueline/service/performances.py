@@ -24,7 +24,9 @@ from blueline.db.models import StoredPerformance
 from blueline.db.repository import (
     MethodRepository,
     PerformanceRepository,
+    TowerRepository,
     to_performance,
+    to_tower,
 )
 from blueline.errors import BluelineError
 from blueline.service.results import Result, invalid, not_found, succeeded
@@ -47,6 +49,8 @@ class PerformanceView:
     is_peal: bool
     has_covering_tenor: bool
     board: Tuple[str, ...]
+    #: The tower, where the place matched one that is stored.
+    tower: Optional[str] = None
 
     def summary(self) -> str:
         return f"{self.length} {self.title} at {self.place} on {self.rang_on:%d %B %Y}"
@@ -83,6 +87,7 @@ def view_of(stored: StoredPerformance) -> PerformanceView:
         is_peal=performance.is_peal,
         has_covering_tenor=performance.has_covering_tenor,
         board=tuple(performance.board()),
+        tower=stored.tower.place if stored.tower else None,
     )
 
 
@@ -97,8 +102,14 @@ def record(
     ringers: List[str],
     conductor: Optional[str] = None,
     composer: Optional[str] = None,
+    towers: Optional[TowerRepository] = None,
 ) -> Result[PerformanceView]:
-    """Write up something a band rang."""
+    """Write up something a band rang.
+
+    Where the place matches a tower that is stored, the two are linked and the
+    tower is checked. A ring of six cannot have rung major, and a performance
+    saying it did is worth refusing rather than filing.
+    """
     when = parse_date(rang_on)
     if not when.ok:
         return Result(failure=when.failure)
@@ -119,7 +130,11 @@ def record(
     except BluelineError as error:
         return invalid(str(error))
 
-    stored = performances.add(performance, method=methods.find(title))
+    at_tower = towers.find(place) if towers is not None else None
+    if at_tower is not None and not to_tower(at_tower).rings(stage):
+        return invalid(f"{at_tower.place} has {at_tower.bells} bells and cannot ring {stage}")
+
+    stored = performances.add(performance, method=methods.find(title), tower=at_tower)
     return succeeded(view_of(stored))
 
 
