@@ -84,3 +84,53 @@ class TestExitCodes:
         from blueline.cli import main
 
         assert main.EXIT_FOR is EXIT_FOR
+
+
+class TestStores:
+    def test_every_repository_shares_one_session(self, library):
+        from blueline.cli.commands.common import stores
+
+        opened = stores()
+        assert opened.methods.session is opened.session
+        assert opened.performances.session is opened.session
+        assert opened.towers.session is opened.session
+
+    def test_two_calls_give_two_sessions(self, library):
+        from blueline.cli.commands.common import stores
+
+        assert stores().session is not stores().session
+
+    def test_committing_goes_through_the_session(self, library):
+        from blueline.cli.commands.common import stores
+        from tests.methods import PLAIN_BOB_MINOR
+
+        opened = stores()
+        opened.methods.add(PLAIN_BOB_MINOR)
+        opened.commit()
+
+        fresh = stores()
+        assert fresh.methods.find("Plain Bob Minor") is not None
+
+    def test_a_tower_and_a_performance_can_be_joined(self, library):
+        # This is the thing that broke when each helper opened its own
+        # session: the tower belonged to one and the performance to another.
+        from blueline.cli.commands.common import stores
+        from blueline.service import performances as perf_service
+        from blueline.service import towers as tower_service
+
+        opened = stores()
+        tower_service.add(opened.towers, "St Andrew, Marchgate", 8, "23-1-14")
+        result = perf_service.record(
+            opened.performances,
+            opened.methods,
+            title="Cambridge Surprise Major",
+            stage=8,
+            length=5024,
+            rang_on="2023-03-18",
+            place="St Andrew, Marchgate",
+            ringers=["Ann", "Bob", "Cara", "Dan", "Eve", "Finn", "Gus", "Hana"],
+            conductor="Hana",
+            towers=opened.towers,
+        )
+        assert result.ok
+        assert result.unwrap().tower == "St Andrew, Marchgate"

@@ -74,3 +74,112 @@ class TestRemoving:
     def test_removing_one_that_is_not_there_exits_not_found(self, runner, library):
         result = runner.invoke(app, ["untower", "Nowhere"])
         assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestPerformanceAtATower:
+    EIGHT = [
+        "-r",
+        "Ann",
+        "-r",
+        "Bob",
+        "-r",
+        "Cara",
+        "-r",
+        "Dan",
+        "-r",
+        "Eve",
+        "-r",
+        "Finn",
+        "-r",
+        "Gus",
+        "-r",
+        "Hana",
+    ]
+    SIX = ["-r", "Ann", "-r", "Bob", "-r", "Cara", "-r", "Dan", "-r", "Eve", "-r", "Finn"]
+
+    def test_a_ring_of_six_cannot_have_rung_major(self, runner, seeded):
+        load(runner)
+        result = runner.invoke(
+            app,
+            [
+                "rang",
+                "Cambridge Surprise Major",
+                *self.EIGHT,
+                "-s",
+                "8",
+                "-l",
+                "5024",
+                "--on",
+                "2023-03-18",
+                "-p",
+                "St Mary, Ashcombe",
+                "-c",
+                "Hana",
+            ],
+        )
+        assert result.exit_code == EXIT_FOR[Reason.INVALID]
+
+    def test_a_ring_of_eight_can(self, runner, seeded):
+        load(runner)
+        result = runner.invoke(
+            app,
+            [
+                "rang",
+                "Cambridge Surprise Major",
+                *self.EIGHT,
+                "-s",
+                "8",
+                "-l",
+                "5024",
+                "--on",
+                "2023-03-18",
+                "-p",
+                "St Andrew, Marchgate",
+                "-c",
+                "Hana",
+            ],
+        )
+        assert result.exit_code == 0
+
+    def test_a_place_with_no_tower_is_not_checked(self, runner, seeded):
+        result = runner.invoke(
+            app,
+            [
+                "rang",
+                "Cambridge Surprise Major",
+                *self.EIGHT,
+                "-s",
+                "8",
+                "-l",
+                "5024",
+                "--on",
+                "2023-03-18",
+                "-p",
+                "Somewhere with no tower",
+                "-c",
+                "Hana",
+            ],
+        )
+        assert result.exit_code == 0
+
+    def test_a_ring_of_six_can_ring_minor(self, runner, seeded):
+        load(runner)
+        result = runner.invoke(
+            app,
+            [
+                "rang",
+                "Cambridge Surprise Minor",
+                *self.SIX,
+                "-s",
+                "6",
+                "-l",
+                "720",
+                "--on",
+                "2023-03-18",
+                "-p",
+                "St Mary, Ashcombe",
+                "-c",
+                "Ann",
+            ],
+        )
+        assert result.exit_code == 0

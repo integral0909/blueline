@@ -180,3 +180,37 @@ class TestTotals:
     def test_totals_is_not_read_as_a_performance_id(self, seeded):
         # It sits above the parameterised route, or it comes back a 422.
         assert seeded.get("/performances/totals").status_code == 200
+
+
+class TestTowerLink:
+    def _towers(self, seeded):
+        seeded.post(
+            "/towers", json={"place": "St Andrew, Marchgate", "bells": 8, "tenor": "23-1-14"}
+        )
+        seeded.post("/towers", json={"place": "St Mary, Ashcombe", "bells": 6, "tenor": "8-0-0"})
+
+    def test_it_links_the_tower_when_the_place_matches(self, seeded):
+        self._towers(seeded)
+        body = seeded.post("/performances", json=a_performance()).json()
+        assert body["tower"] == "St Andrew, Marchgate"
+
+    def test_a_place_with_no_tower_is_left_unlinked(self, seeded):
+        self._towers(seeded)
+        body = seeded.post("/performances", json=a_performance(place="Somewhere else")).json()
+        assert body["tower"] is None
+
+    def test_with_no_towers_stored_it_is_still_unlinked(self, seeded):
+        assert seeded.post("/performances", json=a_performance()).json()["tower"] is None
+
+    def test_a_tower_too_small_for_the_stage_is_unprocessable(self, seeded):
+        self._towers(seeded)
+        response = seeded.post(
+            "/performances", json=a_performance(place="St Mary, Ashcombe", stage=8)
+        )
+        assert response.status_code == 422
+        assert "cannot ring 8" in response.json()["detail"]["detail"]
+
+    def test_nothing_is_stored_when_the_tower_refuses(self, seeded):
+        self._towers(seeded)
+        seeded.post("/performances", json=a_performance(place="St Mary, Ashcombe", stage=8))
+        assert seeded.get("/performances").json()["count"] == 0
