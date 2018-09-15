@@ -477,3 +477,19 @@ class TestTotals:
     def test_an_empty_store_lists_no_leaderboards(self, runner, seeded):
         result = runner.invoke(app, ["totals"])
         assert "Ann" not in result.stdout
+
+
+class TestHandbells:
+    def test_it_lists_the_pairs(self, runner, seeded):
+        result = runner.invoke(app, ["handbells", "Cambridge Surprise Major"])
+        assert result.exit_code == 0
+        for pair in ("1-2", "3-4", "5-6", "7-8"):
+            assert pair in result.stdout
+
+    def test_it_counts_the_crossings(self, runner, seeded):
+        result = runner.invoke(app, ["handbells", "Cambridge Surprise Major"])
+        assert "crossings" in result.stdout
+
+    def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
+        result = runner.invoke(app, ["handbells", "Nowhere Surprise Major"])
+        assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]

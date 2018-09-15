@@ -165,3 +165,28 @@ class TestLineWork:
     def test_the_treble_in_cambridge_does(self, seeded):
         body = seeded.get("/methods/Cambridge Surprise Major/line/1").json()
         assert len(body["work"]["dodges"]) == 8
+
+
+class TestHandbells:
+    def test_it_gives_a_pair_per_two_bells(self, seeded):
+        body = seeded.get("/methods/Cambridge Surprise Major/handbells").json()
+        assert [entry["pair"] for entry in body] == ["1-2", "3-4", "5-6", "7-8"]
+
+    def test_each_pair_carries_its_bells(self, seeded):
+        body = seeded.get("/methods/Cambridge Surprise Major/handbells").json()
+        assert body[0]["bells"] == [1, 2]
+
+    def test_an_odd_stage_leaves_the_tenor_out(self, seeded):
+        body = seeded.get("/methods/Grandsire Triples/handbells").json()
+        assert len(body) == 3
+
+    def test_a_pair_crosses_somewhere(self, seeded):
+        body = seeded.get("/methods/Cambridge Surprise Major/handbells").json()
+        assert any(entry["crossings"] for entry in body)
+
+    def test_the_summary_counts_them(self, seeded):
+        body = seeded.get("/methods/Cambridge Surprise Major/handbells").json()
+        assert "crossings" in body[0]["summary"]
+
+    def test_a_method_that_is_not_there_is_a_404(self, seeded):
+        assert seeded.get("/methods/Nowhere Surprise Major/handbells").status_code == 404
