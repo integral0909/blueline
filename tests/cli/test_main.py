@@ -493,3 +493,29 @@ class TestHandbells:
     def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
         result = runner.invoke(app, ["handbells", "Nowhere Surprise Major"])
         assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestForLength:
+    def test_it_finds_a_touch_at_the_length(self, runner, seeded):
+        result = runner.invoke(app, ["for-length", "Plain Bob Doubles", "120", "-l", "1"])
+        assert result.exit_code == 0
+        assert "120" in result.stdout
+
+    def test_a_length_past_the_extent_says_why(self, runner, seeded):
+        result = runner.invoke(app, ["for-length", "Plain Bob Minor", "1260"])
+        assert result.exit_code == 0
+        assert "cannot be rung" in result.stdout
+        assert "720" in result.stdout
+
+    def test_a_length_that_does_not_divide_says_why(self, runner, seeded):
+        result = runner.invoke(app, ["for-length", "Plain Bob Major", "1250"])
+        assert "does not divide" in result.stdout
+
+    def test_a_tolerance_can_bring_it_into_range(self, runner, seeded):
+        result = runner.invoke(app, ["for-length", "Plain Bob Major", "1250", "-g", "2", "-l", "1"])
+        assert result.exit_code == 0
+        assert "cannot be rung" not in result.stdout
+
+    def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
+        result = runner.invoke(app, ["for-length", "Nowhere Surprise Major", "120"])
+        assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]

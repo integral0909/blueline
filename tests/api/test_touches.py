@@ -173,3 +173,57 @@ class TestEarlyRounds:
         body = seeded.get("/methods/Plain Bob Minor/course").json()
         assert body["early_rounds"] is None
         assert body["stands_at_a_lead_end"]
+
+
+class TestForLength:
+    def test_it_finds_a_touch_at_the_length(self, seeded):
+        response = seeded.get(
+            "/methods/Plain Bob Doubles/for-length",
+            params={"length": 120, "max_found": 1},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["reachable"]
+        assert body["found"][0]["length"] == 120
+
+    def test_a_length_past_the_extent_is_reported_not_refused(self, seeded):
+        response = seeded.get("/methods/Plain Bob Minor/for-length", params={"length": 1260})
+        assert response.status_code == 200
+        body = response.json()
+        assert not body["reachable"]
+        assert "only 720 rows" in body["why_not"]
+
+    def test_a_length_that_does_not_divide_into_leads(self, seeded):
+        body = seeded.get("/methods/Plain Bob Major/for-length", params={"length": 1250}).json()
+        assert not body["reachable"]
+        assert "16 changes to a lead" in body["why_not"]
+
+    def test_a_tolerance_can_bring_it_into_range(self, seeded):
+        body = seeded.get(
+            "/methods/Plain Bob Major/for-length",
+            params={"length": 1250, "tolerance": 2, "max_found": 1},
+        ).json()
+        assert body["reachable"]
+
+    def test_it_says_what_it_was_looking_for(self, seeded):
+        body = seeded.get(
+            "/methods/Plain Bob Doubles/for-length",
+            params={"length": 120, "max_found": 1},
+        ).json()
+        assert body["wanted"] == 120
+        assert body["target"] == "120"
+
+    def test_a_length_of_nothing_is_rejected_by_the_schema(self, seeded):
+        response = seeded.get("/methods/Plain Bob Minor/for-length", params={"length": 0})
+        assert response.status_code == 422
+
+    def test_a_call_it_does_not_have_is_unprocessable(self, seeded):
+        response = seeded.get(
+            "/methods/Plain Bob Minor/for-length",
+            params={"length": 60, "allowed": "pz"},
+        )
+        assert response.status_code == 422
+
+    def test_a_method_that_is_not_there_is_a_404(self, seeded):
+        response = seeded.get("/methods/Nowhere Surprise Major/for-length", params={"length": 120})
+        assert response.status_code == 404
