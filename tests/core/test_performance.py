@@ -112,3 +112,35 @@ class TestWritingUp:
 
     def test_nothing_is_noted_when_nobody_covers(self):
         assert not any("covering" in line for line in a_performance().board())
+
+
+class TestDuration:
+    def test_a_peal_at_thirty_takes_about_three_hours(self):
+        hours = a_performance().duration.total_seconds() / 3600
+        assert 2.5 < hours < 3.0
+
+    def test_a_faster_band_takes_less_time(self):
+        quick = a_performance(peal_speed=35.0).duration
+        slow = a_performance(peal_speed=25.0).duration
+        assert quick < slow
+
+    def test_a_quarter_takes_about_forty_five_minutes(self):
+        minutes = a_performance(length=1250).duration.total_seconds() / 60
+        assert 35 < minutes < 50
+
+    def test_the_default_speed_is_thirty(self):
+        assert a_performance().peal_speed == 30.0
+
+    def test_the_session_covers_the_whole_time_on_the_bells(self):
+        performance = a_performance()
+        assert performance.session.total_time > performance.duration
+
+    def test_the_session_uses_the_band_size_for_the_raising(self):
+        assert a_performance().session.bells == 8
+
+    def test_the_board_says_how_long_it_took(self):
+        assert any("h " in line for line in a_performance().board())
+
+    def test_a_short_touch_reads_in_minutes(self):
+        board = a_performance(length=224).board()
+        assert any("minutes" in line for line in board)

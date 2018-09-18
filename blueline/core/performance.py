@@ -16,10 +16,11 @@ from __future__ import annotations
 from typing import List, Optional
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 from blueline.core.bands import Band
 from blueline.core.peals import Standing, standing_of
+from blueline.core.ringing_up import Session, time_for
 from blueline.errors import BluelineError
 
 
@@ -38,6 +39,8 @@ class Performance:
     rang_on: date
     place: str
     composer: Optional[str] = None
+    #: Rows a minute. Thirty is ordinary for a tower of eight.
+    peal_speed: float = 30.0
 
     def __post_init__(self) -> None:
         if not self.title.strip():
@@ -58,6 +61,20 @@ class Performance:
         return self.standing.is_peal
 
     @property
+    def session(self) -> Session:
+        """The whole time on the bells, raising and lowering included."""
+        return Session(
+            bells=self.band.stage,
+            changes=self.length,
+            peal_speed=self.peal_speed,
+        )
+
+    @property
+    def duration(self) -> timedelta:
+        """How long the changes took, not counting getting the bells up."""
+        return time_for(self.length, self.peal_speed)
+
+    @property
     def has_covering_tenor(self) -> bool:
         """Whether somebody rang a bell that took no part in the changes."""
         return self.band.stage > self.stage
@@ -72,7 +89,7 @@ class Performance:
 
     def board(self) -> List[str]:
         """The whole thing as it would be written up."""
-        lines = [self.headline(), "", f"{self.length} {self.title}"]
+        lines = [self.headline(), "", f"{self.length} {self.title}", _took(self.duration)]
         if self.composer:
             lines.append(f"Composed by {self.composer}")
         lines.append("")
@@ -80,3 +97,12 @@ class Performance:
         if self.has_covering_tenor:
             lines.append(f"{self.band.stage} covering")
         return lines
+
+
+def _took(span: timedelta) -> str:
+    """How long it took, the way it goes on a peal board."""
+    total = int(round(span.total_seconds() / 60))
+    hours, minutes = divmod(total, 60)
+    if not hours:
+        return f"{minutes} minutes"
+    return f"{hours}h {minutes:02d}m"

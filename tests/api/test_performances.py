@@ -214,3 +214,35 @@ class TestTowerLink:
         self._towers(seeded)
         seeded.post("/performances", json=a_performance(place="St Mary, Ashcombe", stage=8))
         assert seeded.get("/performances").json()["count"] == 0
+
+
+class TestDuration:
+    def test_a_peal_carries_how_long_it_took(self, seeded):
+        body = seeded.post("/performances", json=a_performance()).json()
+        assert 150 < body["duration_minutes"] < 180
+
+    def test_a_quarter_takes_less(self, seeded):
+        peal = seeded.post("/performances", json=a_performance()).json()
+        quarter = seeded.post("/performances", json=a_performance(length=1250)).json()
+        assert quarter["duration_minutes"] < peal["duration_minutes"]
+
+    def test_the_board_says_how_long(self, seeded):
+        body = seeded.post("/performances", json=a_performance()).json()
+        assert any("h " in line for line in body["board"])
+
+
+class TestSpeed:
+    def test_the_default_gives_about_three_hours(self, seeded):
+        body = seeded.post("/performances", json=a_performance()).json()
+        assert 150 < body["duration_minutes"] < 180
+
+    def test_a_faster_band_takes_less_time(self, seeded):
+        quick = seeded.post("/performances", json=a_performance(peal_speed=40)).json()
+        slow = seeded.post("/performances", json=a_performance(peal_speed=20)).json()
+        assert quick["duration_minutes"] < slow["duration_minutes"]
+
+    def test_a_speed_of_nothing_is_rejected_by_the_schema(self, seeded):
+        assert seeded.post("/performances", json=a_performance(peal_speed=0)).status_code == 422
+
+    def test_an_impossible_speed_is_rejected(self, seeded):
+        assert seeded.post("/performances", json=a_performance(peal_speed=200)).status_code == 422

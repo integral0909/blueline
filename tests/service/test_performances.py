@@ -276,3 +276,25 @@ class TestTowerLink:
         )
         assert result.ok
         assert result.unwrap().tower == "St Mary, Ashcombe"
+
+
+class TestSpeed:
+    def test_the_default_is_thirty(self, performances, repository):
+        view = record(performances, repository).unwrap()
+        assert 150 < view.duration_minutes < 180
+
+    def test_a_faster_band_takes_less_time(self, performances, repository):
+        quick = record(performances, repository, peal_speed=40.0).unwrap()
+        slow = record(performances, repository, peal_speed=20.0).unwrap()
+        assert quick.duration_minutes < slow.duration_minutes
+
+    def test_a_speed_of_nothing_is_invalid(self, performances, repository):
+        result = record(performances, repository, peal_speed=0)
+        assert result.failure.reason is Reason.INVALID
+
+    def test_a_negative_speed_is_invalid(self, performances, repository):
+        assert not record(performances, repository, peal_speed=-5).ok
+
+    def test_nothing_is_stored_when_the_speed_is_refused(self, performances, repository):
+        record(performances, repository, peal_speed=0)
+        assert performances.count() == 0

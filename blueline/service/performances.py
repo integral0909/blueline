@@ -46,6 +46,7 @@ class PerformanceView:
     conductor: str
     ringers: Tuple[str, ...]
     counts_as: str
+    duration_minutes: int
     is_peal: bool
     has_covering_tenor: bool
     board: Tuple[str, ...]
@@ -84,6 +85,7 @@ def view_of(stored: StoredPerformance) -> PerformanceView:
         conductor=performance.band.conducted_by,
         ringers=performance.band.ringers,
         counts_as=performance.standing.counts_as,
+        duration_minutes=int(round(performance.duration.total_seconds() / 60)),
         is_peal=performance.is_peal,
         has_covering_tenor=performance.has_covering_tenor,
         board=tuple(performance.board()),
@@ -102,6 +104,7 @@ def record(
     ringers: List[str],
     conductor: Optional[str] = None,
     composer: Optional[str] = None,
+    peal_speed: float = 30.0,
     towers: Optional[TowerRepository] = None,
 ) -> Result[PerformanceView]:
     """Write up something a band rang.
@@ -110,6 +113,8 @@ def record(
     tower is checked. A ring of six cannot have rung major, and a performance
     saying it did is worth refusing rather than filing.
     """
+    if peal_speed <= 0:
+        return invalid("bells have to be rung at some speed")
     when = parse_date(rang_on)
     if not when.ok:
         return Result(failure=when.failure)
@@ -126,6 +131,7 @@ def record(
             rang_on=when.unwrap(),
             place=place.strip(),
             composer=composer,
+            peal_speed=peal_speed,
         )
     except BluelineError as error:
         return invalid(str(error))
