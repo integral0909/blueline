@@ -519,3 +519,27 @@ class TestForLength:
     def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
         result = runner.invoke(app, ["for-length", "Nowhere Surprise Major", "120"])
         assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestVariations:
+    def test_it_reverses_a_method(self, runner, seeded):
+        result = runner.invoke(app, ["vary", "Cambridge Surprise Minor", "reverse"])
+        assert result.exit_code == 0
+        assert "Reverse Cambridge" in result.stdout
+
+    def test_a_variation_it_does_not_know_exits_invalid(self, runner, seeded):
+        result = runner.invoke(app, ["vary", "Plain Bob Minor", "sideways"])
+        assert result.exit_code == EXIT_FOR[Reason.INVALID]
+
+    def test_it_swaps_a_lead_end(self, runner, seeded):
+        result = runner.invoke(app, ["lead-end", "Cambridge Surprise Minor", "16"])
+        assert result.exit_code == 0
+        assert "16" in result.stdout
+
+    def test_it_relates_two_methods(self, runner, seeded):
+        result = runner.invoke(app, ["relation", "Plain Bob Minor", "Plain Bob Minor"])
+        assert "the same method" in result.stdout
+
+    def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
+        result = runner.invoke(app, ["vary", "Nowhere Surprise Major", "reverse"])
+        assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]

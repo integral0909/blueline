@@ -190,3 +190,62 @@ class TestHandbells:
 
     def test_a_method_that_is_not_there_is_a_404(self, seeded):
         assert seeded.get("/methods/Nowhere Surprise Major/handbells").status_code == 404
+
+
+class TestVariations:
+    def test_it_reverses_a_method(self, seeded):
+        response = seeded.get("/methods/Cambridge Surprise Minor/vary/reverse")
+        assert response.status_code == 200
+        assert response.json()["name"] == "Reverse Cambridge"
+
+    def test_it_turns_a_method_over(self, seeded):
+        body = seeded.get("/methods/Plain Bob Minor/vary/mirror").json()
+        assert body["notation"].endswith("56")
+
+    def test_a_name_can_be_given(self, seeded):
+        body = seeded.get(
+            "/methods/Cambridge Surprise Minor/vary/mirror", params={"name": "Primrose"}
+        ).json()
+        assert body["name"] == "Primrose"
+
+    def test_nothing_is_stored(self, seeded):
+        before = seeded.get("/methods").json()["count"]
+        seeded.get("/methods/Cambridge Surprise Minor/vary/reverse")
+        assert seeded.get("/methods").json()["count"] == before
+
+    def test_a_variation_it_does_not_know_is_unprocessable(self, seeded):
+        response = seeded.get("/methods/Plain Bob Minor/vary/sideways")
+        assert response.status_code == 422
+
+    def test_a_method_that_is_not_there_is_a_404(self, seeded):
+        assert seeded.get("/methods/Nowhere Surprise Major/vary/reverse").status_code == 404
+
+
+class TestLeadEndSwap:
+    def test_it_swaps_the_lead_end(self, seeded):
+        body = seeded.get("/methods/Cambridge Surprise Minor/lead-end/16").json()
+        assert body["notation"].endswith("16")
+
+    def test_the_result_still_rings_true(self, seeded):
+        body = seeded.get("/methods/Cambridge Surprise Minor/lead-end/16").json()
+        assert body["course_is_true"]
+
+    def test_a_change_that_does_not_work_is_unprocessable(self, seeded):
+        assert seeded.get("/methods/Plain Bob Minor/lead-end/13").status_code == 422
+
+    def test_a_method_that_is_not_there_is_a_404(self, seeded):
+        assert seeded.get("/methods/Nowhere Surprise Major/lead-end/16").status_code == 404
+
+
+class TestRelation:
+    def test_a_method_is_the_same_as_itself(self, seeded):
+        body = seeded.get("/methods/Plain Bob Minor/relation/Plain Bob Minor").json()
+        assert body["relation"] == "the same method"
+
+    def test_two_unrelated_methods_say_so(self, seeded):
+        body = seeded.get("/methods/Plain Bob Minor/relation/Cambridge Surprise Minor").json()
+        assert body["relation"] == "not related"
+
+    def test_a_method_that_is_not_there_is_a_404(self, seeded):
+        response = seeded.get("/methods/Plain Bob Minor/relation/Nowhere Surprise Major")
+        assert response.status_code == 404

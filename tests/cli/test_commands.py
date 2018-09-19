@@ -53,8 +53,8 @@ class TestRegistered:
         for group in GROUPS.values():
             assert names(group) <= registered
 
-    def test_there_are_twenty_three_of_them(self):
-        assert len(app.registered_commands) == 23
+    def test_there_are_twenty_six_of_them(self):
+        assert len(app.registered_commands) == 26
 
     def test_they_are_all_at_the_top_level(self):
         # Nobody wants to type "blueline methods show".
