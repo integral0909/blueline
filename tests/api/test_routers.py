@@ -6,13 +6,19 @@ from typing import Set
 
 import pytest
 
-from blueline.api.routers import methods_router, service_router, touches_router
+from blueline.api.routers import (
+    analysis_router,
+    library_router,
+    service_router,
+    touches_router,
+)
 from blueline.api.routers.common import STATUS_FOR, refuse, unwrap
 from blueline.service.results import Failure, Reason, not_found, succeeded
 
 ROUTERS = {
     "service": service_router,
-    "methods": methods_router,
+    "library": library_router,
+    "analysis": analysis_router,
     "touches": touches_router,
 }
 
@@ -35,9 +41,18 @@ class TestSplit:
     def test_health_is_on_the_service_router(self):
         assert "/health" in paths(service_router)
 
-    def test_the_method_endpoints_are_together(self):
-        assert "/analyse" in paths(methods_router)
-        assert "/methods" in paths(methods_router)
+    def test_the_library_endpoints_are_together(self):
+        assert "/methods" in paths(library_router)
+        assert "/methods/import" in paths(library_router)
+
+    def test_the_analysis_endpoints_are_together(self):
+        assert "/analyse" in paths(analysis_router)
+        assert "/methods/{title}/line/{bell}" in paths(analysis_router)
+
+    def test_nothing_that_writes_is_in_the_analysis_router(self):
+        writes = {"POST", "PUT", "PATCH", "DELETE"}
+        for route in analysis_router.routes:
+            assert not (route.methods & writes - {"POST"}) or route.path == "/analyse"
 
     def test_the_touch_endpoints_are_together(self):
         assert "/methods/{title}/prove" in paths(touches_router)
