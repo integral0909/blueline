@@ -6,7 +6,7 @@ from typing import Set
 
 from typer.testing import CliRunner
 
-from blueline.cli.commands import methods, performances, touches, towers
+from blueline.cli.commands import methods, performances, plans, touches, towers
 from blueline.cli.commands.common import EXIT_FOR
 from blueline.cli.main import app
 from blueline.service.results import Reason
@@ -16,6 +16,7 @@ GROUPS = {
     "touches": touches.app,
     "performances": performances.app,
     "towers": towers.app,
+    "plans": plans.app,
 }
 
 
@@ -46,6 +47,9 @@ class TestSplit:
     def test_the_tower_commands_are_together(self):
         assert {"tower", "towers", "untower"} <= names(towers.app)
 
+    def test_the_plan_commands_are_together(self):
+        assert {"plan", "ringable"} <= names(plans.app)
+
 
 class TestRegistered:
     def test_every_command_reaches_the_application(self):
@@ -53,8 +57,8 @@ class TestRegistered:
         for group in GROUPS.values():
             assert names(group) <= registered
 
-    def test_there_are_twenty_six_of_them(self):
-        assert len(app.registered_commands) == 26
+    def test_there_are_twenty_eight_of_them(self):
+        assert len(app.registered_commands) == 28
 
     def test_they_are_all_at_the_top_level(self):
         # Nobody wants to type "blueline methods show".
