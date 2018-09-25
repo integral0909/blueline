@@ -63,3 +63,18 @@ class HandbellView:
         crossed = len(self.crossings)
         word = "crossing" if crossed == 1 else "crossings"
         return f"{self.pair}: {crossed} {word}, together {len(self.together)} times"
+
+
+@dataclass(frozen=True)
+class GroupView:
+    """A lead head group, and which stored methods are in it."""
+
+    head: str
+    order: int
+    places_at_lead_end: str
+    titles: Tuple[str, ...]
+
+    def summary(self) -> str:
+        count = len(self.titles)
+        word = "method" if count == 1 else "methods"
+        return f"{self.head}: {count} {word}, {self.order} leads to a course"

@@ -19,6 +19,7 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
 from blueline.core.calls import Call, called_lead
+from blueline.core.leadheads import share_lead_heads
 from blueline.core.method import Method
 from blueline.core.row import Row
 from blueline.errors import TouchError
@@ -100,11 +101,11 @@ def lead_heads_agree(first: Method, second: Method) -> bool:
     """Whether two methods can be spliced at a lead end.
 
     They have to leave the bells in the same places, or the line the band
-    learnt for the next method starts from somewhere it does not expect.
+    learnt for the next method starts from somewhere it does not expect. That
+    is the same question a composer asks about whether one method's calling
+    will ring to another, so there is one answer to it in core/leadheads.
     """
-    if first.stage != second.stage:
-        return False
-    return first.lead_head == second.lead_head
+    return share_lead_heads(first, second)
 
 
 def spliceable(methods: List[Method]) -> List[Tuple[str, str]]:

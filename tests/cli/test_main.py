@@ -543,3 +543,32 @@ class TestVariations:
     def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
         result = runner.invoke(app, ["vary", "Nowhere Surprise Major", "reverse"])
         assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestLeadHeadGroups:
+    def test_it_lists_the_groups(self, runner, seeded):
+        result = runner.invoke(app, ["groups", "-s", "8"])
+        assert result.exit_code == 0
+        assert "lead head groups" in result.stdout
+
+    def test_it_shows_the_lead_end_places(self, runner, seeded):
+        result = runner.invoke(app, ["groups", "-s", "8"])
+        assert "12" in result.stdout
+        assert "18" in result.stdout
+
+    def test_an_empty_library_has_no_groups(self, runner, library):
+        assert "0 lead head groups" in runner.invoke(app, ["groups"]).stdout
+
+    def test_it_finds_what_shares_a_composition(self, runner, seeded):
+        result = runner.invoke(app, ["same-compositions", "Cambridge Surprise Major"])
+        assert result.exit_code == 0
+        assert "Yorkshire 8" in result.stdout
+
+    def test_a_method_on_its_own_lists_nothing(self, runner, seeded):
+        result = runner.invoke(app, ["same-compositions", "Bristol Surprise Major"])
+        assert result.exit_code == 0
+        assert result.stdout.strip() == ""
+
+    def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
+        result = runner.invoke(app, ["same-compositions", "Nowhere Surprise Major"])
+        assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]

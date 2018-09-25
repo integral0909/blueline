@@ -249,3 +249,50 @@ class TestRelation:
     def test_a_method_that_is_not_there_is_a_404(self, seeded):
         response = seeded.get("/methods/Plain Bob Minor/relation/Nowhere Surprise Major")
         assert response.status_code == 404
+
+
+class TestLeadHeadGroups:
+    def test_it_groups_the_stored_methods(self, seeded):
+        response = seeded.get("/lead-head-groups", params={"stage": 8})
+        assert response.status_code == 200
+        body = response.json()
+        together = next(entry for entry in body if len(entry["titles"]) > 1)
+        assert together["titles"] == [
+            "Cambridge 8",
+            "Lincolnshire 8",
+            "Superlative 8",
+            "Yorkshire 8",
+        ]
+
+    def test_it_carries_the_lead_end_places(self, seeded):
+        body = seeded.get("/lead-head-groups", params={"stage": 8}).json()
+        assert {entry["places_at_lead_end"] for entry in body} >= {"12", "18"}
+
+    def test_every_method_lands_in_a_group(self, seeded):
+        body = seeded.get("/lead-head-groups", params={"stage": 8}).json()
+        total = sum(len(entry["titles"]) for entry in body)
+        assert total == seeded.get("/methods", params={"stage": 8}).json()["count"]
+
+    def test_without_a_stage_it_covers_everything(self, seeded):
+        body = seeded.get("/lead-head-groups").json()
+        total = sum(len(entry["titles"]) for entry in body)
+        assert total == seeded.get("/methods").json()["count"]
+
+    def test_an_empty_library_has_no_groups(self, client):
+        assert client.get("/lead-head-groups").json() == []
+
+    def test_a_stage_out_of_range_is_rejected(self, seeded):
+        assert seeded.get("/lead-head-groups", params={"stage": 99}).status_code == 422
+
+
+class TestSameCompositions:
+    def test_it_finds_the_others_in_the_group(self, seeded):
+        body = seeded.get("/methods/Cambridge Surprise Major/same-compositions").json()
+        assert body == ["Lincolnshire 8", "Superlative 8", "Yorkshire 8"]
+
+    def test_a_method_on_its_own_finds_nothing(self, seeded):
+        assert seeded.get("/methods/Bristol Surprise Major/same-compositions").json() == []
+
+    def test_a_method_that_is_not_there_is_a_404(self, seeded):
+        response = seeded.get("/methods/Nowhere Surprise Major/same-compositions")
+        assert response.status_code == 404
