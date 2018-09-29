@@ -227,3 +227,49 @@ class TestForLength:
     def test_a_method_that_is_not_there_is_a_404(self, seeded):
         response = seeded.get("/methods/Nowhere Surprise Major/for-length", params={"length": 120})
         assert response.status_code == 404
+
+
+class TestPositions:
+    def test_it_names_the_positions(self, seeded):
+        body = seeded.get("/methods/Plain Bob Major/positions").json()
+        assert body[-1]["name"] == "Home"
+
+    def test_there_is_one_per_lead(self, seeded):
+        assert len(seeded.get("/methods/Plain Bob Major/positions").json()) == 7
+
+    def test_it_says_where_the_tenor_is(self, seeded):
+        body = seeded.get("/methods/Plain Bob Major/positions").json()
+        assert body[-1]["tenor_place"] == 8
+
+    def test_a_method_that_is_not_there_is_a_404(self, seeded):
+        assert seeded.get("/methods/Nowhere Surprise Major/positions").status_code == 404
+
+
+class TestCall:
+    def test_it_proves_a_touch_called_by_position(self, seeded):
+        response = seeded.post("/methods/Plain Bob Major/call", json={"called": ["Home"]})
+        assert response.status_code == 200
+        assert response.json()["leads"] == 7
+
+    def test_two_homes_run_on_into_another_course(self, seeded):
+        body = seeded.post(
+            "/methods/Plain Bob Major/call",
+            json={"called": ["Wrong", "Home", "Home"]},
+        ).json()
+        assert body["leads"] == 14
+
+    def test_the_calling_comes_back_in_symbols(self, seeded):
+        body = seeded.post("/methods/Plain Bob Major/call", json={"called": ["Home"]}).json()
+        assert body["calling"] == "pppppp-"
+
+    def test_calling_nothing_is_the_plain_course(self, seeded):
+        body = seeded.post("/methods/Plain Bob Major/call", json={"called": []}).json()
+        assert body["length"] == 112
+
+    def test_a_position_it_does_not_know_is_unprocessable(self, seeded):
+        response = seeded.post("/methods/Plain Bob Major/call", json={"called": ["Sideways"]})
+        assert response.status_code == 422
+
+    def test_a_method_that_is_not_there_is_a_404(self, seeded):
+        response = seeded.post("/methods/Nowhere Surprise Major/call", json={"called": ["Home"]})
+        assert response.status_code == 404

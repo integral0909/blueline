@@ -19,9 +19,9 @@ from blueline.core.spliced import Spliced, build_spliced, spliceable
 from blueline.core.truth import Repeat
 from blueline.db.repository import MethodRepository, to_method
 from blueline.errors import BluelineError
+from blueline.service.proving import calls_for
 from blueline.service.reports import Outcome, outcome_of
 from blueline.service.results import Result, invalid, not_found, succeeded
-from blueline.service.touches import calls_for
 
 
 @dataclass(frozen=True)

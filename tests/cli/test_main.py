@@ -572,3 +572,29 @@ class TestLeadHeadGroups:
     def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
         result = runner.invoke(app, ["same-compositions", "Nowhere Surprise Major"])
         assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestCallingPositions:
+    def test_it_names_the_positions(self, runner, seeded):
+        result = runner.invoke(app, ["positions", "Plain Bob Major"])
+        assert result.exit_code == 0
+        assert "Home" in result.stdout
+        assert "Wrong" in result.stdout
+
+    def test_it_proves_a_touch_called_by_position(self, runner, seeded):
+        result = runner.invoke(app, ["call", "Plain Bob Major", "Wrong", "Home", "Home"])
+        assert result.exit_code == 0
+        assert "14" in result.stdout
+
+    def test_calling_nothing_is_the_plain_course(self, runner, seeded):
+        result = runner.invoke(app, ["call", "Plain Bob Major"])
+        assert result.exit_code == 0
+        assert "112" in result.stdout
+
+    def test_a_position_it_does_not_know_exits_invalid(self, runner, seeded):
+        result = runner.invoke(app, ["call", "Plain Bob Major", "Sideways"])
+        assert result.exit_code == EXIT_FOR[Reason.INVALID]
+
+    def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
+        result = runner.invoke(app, ["positions", "Nowhere Surprise Major"])
+        assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
