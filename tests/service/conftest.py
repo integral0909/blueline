@@ -1,6 +1,10 @@
 import pytest
 
-from blueline.db.repository import MethodRepository, PerformanceRepository
+from blueline.db.repository import (
+    MethodRepository,
+    PerformanceRepository,
+    RingerRepository,
+)
 from blueline.db.session import MEMORY_URL, create_all, drop_all, make_engine, session_factory
 from blueline.library.builtin import standard_methods
 
@@ -27,3 +31,9 @@ def loaded(repository):
 def performances(repository):
     """A performance repository on the same session as the method one."""
     return PerformanceRepository(repository.session)
+
+
+@pytest.fixture()
+def ringers(repository):
+    """A ringer repository on the same session as the method one."""
+    return RingerRepository(repository.session)
