@@ -11,8 +11,16 @@ from typing import List, Optional, Tuple
 
 from dataclasses import dataclass
 
+from blueline.core.method import Method
 from blueline.core.plans import Item, PlanError, plan_practice, ringable_by
-from blueline.db.repository import MethodRepository, TowerRepository, to_method, to_tower
+from blueline.core.ringers import enough_for
+from blueline.db.repository import (
+    MethodRepository,
+    RingerRepository,
+    TowerRepository,
+    to_method,
+    to_tower,
+)
 from blueline.errors import BluelineError
 from blueline.service.results import Result, invalid, not_found, succeeded
 
@@ -29,10 +37,18 @@ class PlanView:
     items: Tuple[str, ...]
     titles: Tuple[str, ...]
     summary: str
+    #: Methods left out because the band cannot ring them yet.
+    beyond_the_band: Tuple[str, ...] = ()
 
 
 def _view(
-    items: Tuple[Item, ...], ringers: int, minutes: int, spare: int, changes: int, summary: str
+    items: Tuple[Item, ...],
+    ringers: int,
+    minutes: int,
+    spare: int,
+    changes: int,
+    summary: str,
+    beyond: Tuple[str, ...] = (),
 ) -> PlanView:
     return PlanView(
         ringers=ringers,
@@ -43,6 +59,7 @@ def _view(
         items=tuple(str(item) for item in items),
         titles=tuple(item.title for item in items),
         summary=summary,
+        beyond_the_band=beyond,
     )
 
 
@@ -53,6 +70,7 @@ def plan(
     speed: float = 30.0,
     towers: Optional[TowerRepository] = None,
     place: Optional[str] = None,
+    band: Optional[RingerRepository] = None,
 ) -> Result[PlanView]:
     """What a band could ring in the time, out of what is stored.
 
@@ -72,13 +90,33 @@ def plan(
         at_most = min(ringers, to_tower(stored).bells)
 
     methods = [to_method(each) for each in repository.all()]
+    beyond: Tuple[str, ...] = ()
+    if band is not None:
+        # A method the band cannot get through is not a choice however well it
+        # fits the time. What is left out is reported rather than silently
+        # dropped, because a captain wants to know what they are one ringer
+        # short of.
+        people = band.band()
+        if people:
+            able = [method for method in methods if enough_for(people, _title_of(method), at_most)]
+            beyond = tuple(
+                sorted(
+                    _title_of(method)
+                    for method in methods
+                    if method not in able and method.stage <= at_most
+                )
+            )
+            methods = able
+
     try:
         made = plan_practice(methods, ringers=at_most, minutes=minutes, speed=speed)
     except (PlanError, BluelineError) as error:
         return invalid(str(error))
 
     spare = int(round(made.left_over.total_seconds() / 60))
-    return succeeded(_view(made.items, at_most, minutes, spare, made.changes, made.summary()))
+    return succeeded(
+        _view(made.items, at_most, minutes, spare, made.changes, made.summary(), beyond)
+    )
 
 
 def what_can_be_rung(repository: MethodRepository, ringers: int) -> Result[List[str]]:
@@ -89,3 +127,10 @@ def what_can_be_rung(repository: MethodRepository, ringers: int) -> Result[List[
     except PlanError as error:
         return invalid(str(error))
     return succeeded(sorted(f"{method.name} {method.stage}" for method in found))
+
+
+def _title_of(method: Method) -> str:
+    """The full title, which is what a ringer's list is keyed on."""
+    from blueline.analysis import analyse
+
+    return str(analyse(method).title)

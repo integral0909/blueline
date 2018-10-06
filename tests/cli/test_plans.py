@@ -48,3 +48,37 @@ class TestRingable:
     def test_a_band_too_small_exits_invalid(self, runner, seeded):
         result = runner.invoke(app, ["ringable", "2"])
         assert result.exit_code == EXIT_FOR[Reason.INVALID]
+
+
+class TestByAbility:
+    def _band(self, runner):
+        for name in ("Ann", "Bob", "Cara", "Dan", "Eve", "Finn"):
+            runner.invoke(
+                app,
+                ["ringer", name, "-r", "Plain Bob Major", "-r", "Cambridge Surprise Major"],
+            )
+        runner.invoke(
+            app, ["ringer", "Gus", "-r", "Plain Bob Major", "-l", "Cambridge Surprise Major"]
+        )
+        runner.invoke(app, ["ringer", "Hana", "-r", "Plain Bob Major"])
+
+    def test_it_only_picks_what_the_band_can_get_through(self, runner, seeded):
+        self._band(runner)
+        result = runner.invoke(app, ["plan", "8", "60"])
+        assert result.exit_code == 0
+        assert "Plain" in result.stdout
+
+    def test_it_says_how_much_was_left_out(self, runner, seeded):
+        self._band(runner)
+        result = runner.invoke(app, ["plan", "8", "60"])
+        assert "beyond the band" in result.stdout
+
+    def test_it_can_be_told_to_ignore_the_band(self, runner, seeded):
+        self._band(runner)
+        result = runner.invoke(app, ["plan", "8", "60", "--anything"])
+        assert "beyond the band" not in result.stdout
+
+    def test_with_nobody_stored_nothing_is_filtered(self, runner, seeded):
+        result = runner.invoke(app, ["plan", "8", "60"])
+        assert result.exit_code == 0
+        assert "beyond the band" not in result.stdout

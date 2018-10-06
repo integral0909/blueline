@@ -89,3 +89,53 @@ class TestWhatCanBeRung:
 
     def test_a_band_bigger_than_anything_stored_gets_nothing(self, loaded):
         assert service.what_can_be_rung(loaded, 16).unwrap() == []
+
+
+class TestByWhatTheBandCanRing:
+    def _band(self, repository):
+        from blueline.db.repository import RingerRepository
+        from blueline.service import ringers as ringer_service
+
+        store = RingerRepository(repository.session)
+        for name in ("Ann", "Bob", "Cara", "Dan", "Eve", "Finn"):
+            ringer_service.add(store, name, ["Plain Bob Major", "Cambridge Surprise Major"])
+        ringer_service.add(store, "Gus", ["Plain Bob Major"], ["Cambridge Surprise Major"])
+        ringer_service.add(store, "Hana", ["Plain Bob Major"])
+        return store
+
+    def test_it_only_picks_what_the_band_can_get_through(self, loaded, repository):
+        band = self._band(repository)
+        view = service.plan(loaded, ringers=8, minutes=60, band=band).unwrap()
+        assert view.titles == ("Plain 8",)
+
+    def test_it_says_what_was_left_out(self, loaded, repository):
+        band = self._band(repository)
+        view = service.plan(loaded, ringers=8, minutes=60, band=band).unwrap()
+        assert "Cambridge Surprise Major" in view.beyond_the_band
+
+    def test_once_the_learner_has_it_the_method_comes_in(self, loaded, repository):
+        from blueline.service import ringers as ringer_service
+
+        band = self._band(repository)
+        ringer_service.learnt(band, "Gus", "Cambridge Surprise Major")
+        ringer_service.learnt(band, "Hana", "Cambridge Surprise Major")
+        view = service.plan(loaded, ringers=8, minutes=60, band=band).unwrap()
+        assert "Cambridge 8" in view.titles
+        assert "Cambridge Surprise Major" not in view.beyond_the_band
+
+    def test_without_a_band_nothing_is_filtered(self, loaded):
+        view = service.plan(loaded, ringers=8, minutes=60).unwrap()
+        assert view.beyond_the_band == ()
+        assert len(view.titles) > 1
+
+    def test_an_empty_band_is_ignored_rather_than_ruling_everything_out(self, loaded, repository):
+        from blueline.db.repository import RingerRepository
+
+        empty = RingerRepository(repository.session)
+        view = service.plan(loaded, ringers=8, minutes=60, band=empty).unwrap()
+        assert view.titles
+
+    def test_it_still_honours_the_time(self, loaded, repository):
+        band = self._band(repository)
+        view = service.plan(loaded, ringers=8, minutes=5, band=band).unwrap()
+        assert view.used_minutes <= 5

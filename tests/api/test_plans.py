@@ -57,3 +57,41 @@ class TestRingable:
 
     def test_a_band_too_small_is_rejected(self, seeded):
         assert seeded.get("/plan/ringable", params={"ringers": 2}).status_code == 422
+
+
+class TestByAbility:
+    def _band(self, client):
+        for name in ("Ann", "Bob", "Cara", "Dan", "Eve", "Finn"):
+            client.post(
+                "/ringers",
+                json={"name": name, "can_ring": ["Plain Bob Major", "Cambridge Surprise Major"]},
+            )
+        client.post(
+            "/ringers",
+            json={
+                "name": "Gus",
+                "can_ring": ["Plain Bob Major"],
+                "learning": ["Cambridge Surprise Major"],
+            },
+        )
+        client.post("/ringers", json={"name": "Hana", "can_ring": ["Plain Bob Major"]})
+
+    def test_it_only_picks_what_the_band_can_get_through(self, seeded):
+        self._band(seeded)
+        body = seeded.get("/plan", params={"ringers": 8, "minutes": 60}).json()
+        assert body["titles"] == ["Plain 8"]
+
+    def test_it_says_what_was_left_out(self, seeded):
+        self._band(seeded)
+        body = seeded.get("/plan", params={"ringers": 8, "minutes": 60}).json()
+        assert "Cambridge Surprise Major" in body["beyond_the_band"]
+
+    def test_it_can_be_told_to_ignore_the_band(self, seeded):
+        self._band(seeded)
+        body = seeded.get("/plan", params={"ringers": 8, "minutes": 60, "by_ability": False}).json()
+        assert len(body["titles"]) > 1
+        assert body["beyond_the_band"] == []
+
+    def test_with_nobody_stored_nothing_is_filtered(self, seeded):
+        body = seeded.get("/plan", params={"ringers": 8, "minutes": 60}).json()
+        assert body["titles"]
