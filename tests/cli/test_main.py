@@ -411,7 +411,8 @@ class TestPerformances:
     def test_it_writes_one_up(self, runner, seeded):
         result = self._rang(runner)
         assert result.exit_code == 0
-        assert "St Andrew, Marchgate, 18 March 2023" in result.stdout
+        assert "St Andrew, Marchgate" in result.stdout
+        assert "18 March 2023" in result.stdout
 
     def test_the_board_lists_the_band(self, runner, seeded):
         result = self._rang(runner)
@@ -597,4 +598,20 @@ class TestCallingPositions:
 
     def test_a_method_that_is_not_there_exits_not_found(self, runner, seeded):
         result = runner.invoke(app, ["positions", "Nowhere Surprise Major"])
+        assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestBoard:
+    def test_it_lays_a_performance_out(self, runner, seeded):
+        TestPerformances()._rang(runner)
+        result = runner.invoke(app, ["board", "1"])
+        assert result.exit_code == 0
+        assert "St Andrew, Marchgate" in result.stdout
+
+    def test_it_lists_the_band(self, runner, seeded):
+        TestPerformances()._rang(runner)
+        assert "Hana (c)" in runner.invoke(app, ["board", "1"]).stdout
+
+    def test_one_that_is_not_there_exits_not_found(self, runner, seeded):
+        result = runner.invoke(app, ["board", "999"])
         assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]

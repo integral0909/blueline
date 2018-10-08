@@ -37,7 +37,7 @@ class TestRecording:
 
     def test_it_carries_the_peal_board(self, seeded):
         body = seeded.post("/performances", json=a_performance()).json()
-        assert "8 Hana (c)" in body["board"]
+        assert any("8 Hana (c)" in line for line in body["board"])
 
     def test_a_covering_tenor_is_noticed(self, seeded):
         body = seeded.post("/performances", json=a_performance(stage=7, length=5040)).json()
@@ -246,3 +246,39 @@ class TestSpeed:
 
     def test_an_impossible_speed_is_rejected(self, seeded):
         assert seeded.post("/performances", json=a_performance(peal_speed=200)).status_code == 422
+
+
+class TestBoard:
+    def test_it_lays_a_performance_out(self, seeded):
+        made = seeded.post("/performances", json=a_performance()).json()
+        response = seeded.get(f"/performances/{made['id']}/board")
+        assert response.status_code == 200
+        assert "St Andrew, Marchgate" in response.text
+
+    def test_it_comes_back_as_plain_text(self, seeded):
+        made = seeded.post("/performances", json=a_performance()).json()
+        response = seeded.get(f"/performances/{made['id']}/board")
+        assert response.headers["content-type"].startswith("text/plain")
+
+    def test_every_line_is_the_same_width(self, seeded):
+        made = seeded.post("/performances", json=a_performance()).json()
+        text = seeded.get(f"/performances/{made['id']}/board").text
+        assert {len(line) for line in text.splitlines()} == {44}
+
+    def test_the_width_can_be_changed(self, seeded):
+        made = seeded.post("/performances", json=a_performance()).json()
+        text = seeded.get(f"/performances/{made['id']}/board", params={"width": 60}).text
+        assert {len(line) for line in text.splitlines()} == {60}
+
+    def test_a_silly_width_is_rejected(self, seeded):
+        made = seeded.post("/performances", json=a_performance()).json()
+        response = seeded.get(f"/performances/{made['id']}/board", params={"width": 5})
+        assert response.status_code == 422
+
+    def test_it_lists_the_band(self, seeded):
+        made = seeded.post("/performances", json=a_performance()).json()
+        text = seeded.get(f"/performances/{made['id']}/board").text
+        assert "Hana (c)" in text
+
+    def test_one_that_is_not_there_is_a_404(self, seeded):
+        assert seeded.get("/performances/999/board").status_code == 404

@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from blueline.core.bands import Band, band_of
+from blueline.core.board import WIDTH, render
 from blueline.core.performance import Performance
 from blueline.core.statistics import Totals, leaderboard, totals_of
 from blueline.db.models import StoredPerformance
@@ -197,3 +198,18 @@ def top_methods(
     if not totals.ok:
         return Result(failure=totals.failure)
     return succeeded(leaderboard(totals.unwrap().by_method, top=top))
+
+
+def board(
+    performances: PerformanceRepository,
+    performance_id: int,
+    width: int = WIDTH,
+) -> Result[str]:
+    """One performance laid out as it would be painted on a wall."""
+    if width < 20:
+        return invalid("a board narrower than twenty characters is unreadable")
+    try:
+        found = performances.get(performance_id)
+    except BluelineError:
+        return not_found(f"no performance number {performance_id}")
+    return succeeded(str(render(to_performance(found), width=width)))

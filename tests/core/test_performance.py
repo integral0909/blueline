@@ -88,14 +88,19 @@ class TestWritingUp:
     def test_the_summary_says_what_it_counted_as(self):
         assert "a peal at" in a_performance().summary()
 
-    def test_the_board_opens_with_the_headline(self):
-        assert a_performance().board()[0] == "St Andrew, Marchgate, 18 March 2023"
+    def test_the_board_opens_with_the_place(self):
+        assert "St Andrew, Marchgate" in a_performance().board()[0]
+
+    def test_the_date_comes_next(self):
+        assert "18 March 2023" in a_performance().board()[1]
 
     def test_the_board_names_the_length_and_the_method(self):
-        assert "5024 Cambridge Surprise Major" in a_performance().board()
+        board = a_performance().board()
+        assert any("5024 changes" in line for line in board)
+        assert any("Cambridge Surprise Major" in line for line in board)
 
     def test_the_board_credits_the_composer(self):
-        assert "Composed by F Ahman" in a_performance().board()
+        assert any("Composed by F Ahman" in line for line in a_performance().board())
 
     def test_a_board_with_no_composer_leaves_the_line_out(self):
         board = a_performance(composer=None).board()
@@ -103,12 +108,12 @@ class TestWritingUp:
 
     def test_the_board_lists_the_band(self):
         board = a_performance().board()
-        assert "1 Ann" in board
-        assert "8 Hana (c)" in board
+        assert any("1 Ann" in line for line in board)
+        assert any("8 Hana (c)" in line for line in board)
 
     def test_a_covering_tenor_is_noted(self):
         board = a_performance(stage=7, length=5040).board()
-        assert "8 covering" in board
+        assert any("8 covering" in line for line in board)
 
     def test_nothing_is_noted_when_nobody_covers(self):
         assert not any("covering" in line for line in a_performance().board())

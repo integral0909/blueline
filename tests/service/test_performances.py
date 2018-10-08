@@ -112,7 +112,7 @@ class TestView:
 
     def test_it_carries_the_board(self, performances, repository):
         view = record(performances, repository).unwrap()
-        assert "8 Hana (c)" in view.board
+        assert any("8 Hana (c)" in line for line in view.board)
 
     def test_the_summary_reads_as_a_line(self, performances, repository):
         view = record(performances, repository).unwrap()

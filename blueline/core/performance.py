@@ -88,21 +88,13 @@ class Performance:
         return f"{self.length} {self.title}, a {counts} at {self.place}"
 
     def board(self) -> List[str]:
-        """The whole thing as it would be written up."""
-        lines = [self.headline(), "", f"{self.length} {self.title}", _took(self.duration)]
-        if self.composer:
-            lines.append(f"Composed by {self.composer}")
-        lines.append("")
-        lines.extend(self.band.lines())
-        if self.has_covering_tenor:
-            lines.append(f"{self.band.stage} covering")
-        return lines
+        """The whole thing as it would be written up.
 
+        Laid out in core/board, which knows how wide a board is and how one
+        reads. This grew a rough version of it first and the two had already
+        started to disagree about whether the composer went above the band or
+        below it.
+        """
+        from blueline.core.board import render
 
-def _took(span: timedelta) -> str:
-    """How long it took, the way it goes on a peal board."""
-    total = int(round(span.total_seconds() / 60))
-    hours, minutes = divmod(total, 60)
-    if not hours:
-        return f"{minutes} minutes"
-    return f"{hours}h {minutes:02d}m"
+        return list(render(self).lines)
