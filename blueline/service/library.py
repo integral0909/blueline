@@ -14,7 +14,8 @@ from blueline.core.method import Method
 from blueline.db.models import StoredMethod
 from blueline.db.repository import MethodRepository, to_method
 from blueline.errors import BluelineError
-from blueline.io.documents import DocumentError, LoadResult, read, write_json, write_lines
+from blueline.io.documents import read, write_json, write_lines
+from blueline.io.loading import LoadError, LoadResult
 from blueline.service.method_views import ImportReport
 from blueline.service.results import Result, already_exists, invalid, not_found, succeeded
 
@@ -84,7 +85,7 @@ def import_methods(repository: MethodRepository, text: str) -> Result[ImportRepo
     """
     try:
         loaded: LoadResult = read(text)
-    except DocumentError as error:
+    except LoadError as error:
         return invalid(str(error))
 
     added: List[str] = []

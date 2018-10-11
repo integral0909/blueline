@@ -7,19 +7,21 @@ notation. Everything else is worked out on the way in, because a file claiming
 a method is Surprise when the notation says otherwise would have to be either
 believed or argued with, and neither is good.
 
-Two shapes are read. Json for anything talking to a program, and a line based
-format for anything a person is going to type, because asking somebody to
-write json by hand to add three methods is unkind.
+Two shapes are written here. Json for anything talking to a program, and a line
+based format for anything a person is going to type, because asking somebody to
+write json by hand to add three methods is unkind. Council xml is read too, by
+the reader next door, because read() below is where anything handed a file
+comes looking.
 """
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
 from blueline.core.method import Method
 from blueline.errors import BluelineError
+from blueline.io.loading import LoadError, LoadResult
 
 FORMAT = "blueline.methods"
 VERSION = 1
@@ -30,28 +32,8 @@ DELIMITER = ","
 COMMENT = "#"
 
 
-class DocumentError(BluelineError):
-    """A file that cannot be read as a collection of methods."""
-
-
-@dataclass()
-class LoadResult:
-    """What came out of a file, and what would not."""
-
-    methods: List[Method] = field(default_factory=list)
-    problems: List[str] = field(default_factory=list)
-
-    @property
-    def ok(self) -> bool:
-        return not self.problems
-
-    def __len__(self) -> int:
-        return len(self.methods)
-
-    def summary(self) -> str:
-        if self.ok:
-            return f"{len(self.methods)} methods"
-        return f"{len(self.methods)} methods, {len(self.problems)} could not be read"
+class DocumentError(LoadError):
+    """A file that cannot be read in either of the shapes written here."""
 
 
 def to_record(method: Method) -> Dict[str, Any]:
@@ -141,8 +123,17 @@ def read_lines(text: str) -> LoadResult:
 
 
 def read(text: str) -> LoadResult:
-    """Read either shape, working out which it is from the first character."""
+    """Read whichever shape this is, working it out from the first character.
+
+    Council xml gets sent to the reader that understands it. Somebody handing
+    over a library does not want to be asked which of three formats it is when
+    the file says so itself.
+    """
     stripped = text.lstrip()
     if stripped.startswith("{"):
         return read_json(text)
+    if stripped.startswith("<"):
+        from blueline.io.cccbr import read as read_cccbr
+
+        return read_cccbr(text)
     return read_lines(text)

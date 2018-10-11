@@ -16,41 +16,21 @@ and adding an xml library to read four fields would be a poor trade.
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
-from dataclasses import dataclass, field
 from xml.etree import ElementTree
 
 from blueline.core.method import Method
 from blueline.errors import BluelineError
+from blueline.io.loading import LoadError, LoadResult
 
 #: The namespace the council's files are published under. Elements come back
 #: with it glued on the front, which is why nothing here matches a bare tag.
 NAMESPACE = "http://mathslib.co.uk/xml/method-library"
 
 
-class CccbrError(BluelineError):
-    """A file that cannot be read as a method library."""
-
-
-@dataclass()
-class Loaded:
-    """What came out of a file, and what would not."""
-
-    methods: List[Method] = field(default_factory=list)
-    problems: List[str] = field(default_factory=list)
-
-    @property
-    def ok(self) -> bool:
-        return not self.problems
-
-    def __len__(self) -> int:
-        return len(self.methods)
-
-    def summary(self) -> str:
-        if self.ok:
-            return f"{len(self.methods)} methods"
-        return f"{len(self.methods)} methods, {len(self.problems)} could not be read"
+class CccbrError(LoadError):
+    """A file that cannot be read as a council method library."""
 
 
 def _tag(element: ElementTree.Element) -> str:
@@ -104,19 +84,17 @@ def method_from(element: ElementTree.Element) -> Method:
         raise CccbrError(f"{title}: {error}") from error
 
 
-def read(text: str) -> Loaded:
-    """Read a library, keeping what works and reporting what does not.
-
-    One bad method does not throw the file away. The council's library runs to
-    tens of thousands and anything this cannot read is a method to look at, not
-    a reason to load none of them.
-    """
+def read(text: str) -> LoadResult:
+    """Read a library, keeping what works and reporting what does not."""
     try:
-        root = ElementTree.fromstring(text)
+        # Stripped first. A declaration has to be the very first thing in the
+        # file, and a downloaded library with a blank line on the front is
+        # otherwise rejected for a reason nobody could act on.
+        root = ElementTree.fromstring(text.strip())
     except ElementTree.ParseError as error:
         raise CccbrError(f"not xml: {error}") from error
 
-    found = Loaded()
+    found = LoadResult()
     elements = [element for element in root.iter() if _tag(element) == "method"]
     if not elements:
         raise CccbrError("no methods in this file")

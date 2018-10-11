@@ -92,3 +92,24 @@ class TestProblems:
     def test_a_file_with_no_methods(self) -> None:
         with pytest.raises(CccbrError, match="no methods"):
             read(f"{HEADER}<collection></collection>")
+
+
+class TestThroughDocuments:
+    """A council file reaches the reader through the ordinary front door."""
+
+    def test_read_dispatches_on_the_angle_bracket(self) -> None:
+        from blueline.io.documents import read as read_document
+
+        loaded = read_document(library(CAMBRIDGE, PLAIN))
+        assert loaded.named() == ["Cambridge", "Plain"]
+
+    def test_leading_blank_lines_do_not_confuse_it(self) -> None:
+        from blueline.io.documents import read as read_document
+
+        assert len(read_document("\n\n  " + library(CAMBRIDGE))) == 1
+
+    def test_a_council_error_is_a_load_error(self) -> None:
+        from blueline.io.loading import LoadError
+
+        with pytest.raises(LoadError):
+            read("not xml at all")
