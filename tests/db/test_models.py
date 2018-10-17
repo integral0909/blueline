@@ -6,7 +6,9 @@ from sqlalchemy.exc import IntegrityError
 
 from blueline.db.models import (
     Base,
+    StoredCompetition,
     StoredComposition,
+    StoredEntry,
     StoredMethod,
     StoredPerformance,
     now,
@@ -144,8 +146,18 @@ class TestSchema:
             assert table.primary_key.columns, f"{name} has no primary key"
 
     def test_every_table_records_when_its_rows_were_made(self):
+        # Rows owned by a parent are excused. An entry in a competition is
+        # made when the competition is, cannot outlive it, and a second
+        # timestamp saying the same thing is one more thing to keep honest.
         for name, table in Base.metadata.tables.items():
+            if any(column.foreign_keys for column in table.c if column.name.endswith("_id")):
+                continue
             assert "created_at" in table.c, f"{name} does not say when"
+
+    def test_an_owned_row_goes_when_its_owner_does(self):
+        entries = Base.metadata.tables["entries"]
+        key = next(iter(entries.c.competition_id.foreign_keys))
+        assert key.ondelete == "CASCADE"
 
     def test_the_title_is_indexed_because_everything_looks_up_by_it(self):
         assert Base.metadata.tables["methods"].c.title.index
@@ -222,3 +234,96 @@ class TestStoringPerformances:
 
     def test_it_reads_back_as_its_length_and_title(self):
         assert repr(self.a_performance()) == ("StoredPerformance(5024 'Cambridge Surprise Major')")
+
+
+class TestStoringCompetitions:
+    def a_competition(self, **over) -> StoredCompetition:
+        fields = {
+            "name": "Marchgate District Striking",
+            "held_on": date(2023, 5, 6),
+            "place": "St Andrew, Marchgate",
+            "stage": 6,
+            "judge": "F Ahman",
+        }
+        fields.update(over)
+        return StoredCompetition(**fields)
+
+    def an_entry(self, **over) -> StoredEntry:
+        fields = {
+            "band": "St Mary",
+            "position": 1,
+            "faults": 14,
+            "percentage": 97.5,
+            "drift": "even",
+        }
+        fields.update(over)
+        return StoredEntry(**fields)
+
+    def test_one_can_be_stored(self, session):
+        session.add(self.a_competition())
+        session.commit()
+        assert session.query(StoredCompetition).count() == 1
+
+    def test_it_holds_its_entries(self, session):
+        competition = self.a_competition()
+        competition.entries.append(self.an_entry())
+        competition.entries.append(self.an_entry(band="All Saints", position=2))
+        session.add(competition)
+        session.commit()
+        assert len(session.query(StoredCompetition).one().entries) == 2
+
+    def test_entries_come_back_in_the_order_announced(self, session):
+        competition = self.a_competition()
+        competition.entries.append(self.an_entry(band="All Saints", position=2))
+        competition.entries.append(self.an_entry(band="St Mary", position=1))
+        session.add(competition)
+        session.commit()
+        # Expired first. Until it reloads, the collection is still in the
+        # order it was appended in, which would let this pass without the
+        # order_by doing anything.
+        session.expire_all()
+        bands = [entry.band for entry in session.query(StoredCompetition).one().entries]
+        assert bands == ["St Mary", "All Saints"]
+
+    def test_two_bands_can_be_placed_equal(self, session):
+        competition = self.a_competition()
+        competition.entries.append(self.an_entry(band="St Mary", position=1))
+        competition.entries.append(self.an_entry(band="All Saints", position=1))
+        session.add(competition)
+        session.commit()
+        assert len(session.query(StoredEntry).all()) == 2
+
+    def test_the_same_band_cannot_enter_twice(self, session):
+        competition = self.a_competition()
+        competition.entries.append(self.an_entry())
+        competition.entries.append(self.an_entry(position=2))
+        session.add(competition)
+        with pytest.raises(IntegrityError):
+            session.commit()
+
+    def test_the_same_competition_can_run_again_next_year(self, session):
+        session.add(self.a_competition())
+        session.add(self.a_competition(held_on=date(2024, 5, 4)))
+        session.commit()
+        assert session.query(StoredCompetition).count() == 2
+
+    def test_it_cannot_run_twice_on_one_day(self, session):
+        session.add(self.a_competition())
+        session.add(self.a_competition(place="somewhere else"))
+        with pytest.raises(IntegrityError):
+            session.commit()
+
+    def test_deleting_a_competition_takes_its_entries(self, session):
+        competition = self.a_competition()
+        competition.entries.append(self.an_entry())
+        session.add(competition)
+        session.commit()
+        session.delete(competition)
+        session.commit()
+        assert session.query(StoredEntry).count() == 0
+
+    def test_it_reads_back_as_itself(self, session):
+        session.add(self.a_competition())
+        session.commit()
+        stored = session.query(StoredCompetition).one()
+        assert "Marchgate" in repr(stored)
