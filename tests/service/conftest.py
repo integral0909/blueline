@@ -37,3 +37,9 @@ def performances(repository):
 def ringers(repository):
     """A ringer repository on the same session as the method one."""
     return RingerRepository(repository.session)
+
+
+@pytest.fixture()
+def session(repository):
+    """The session underneath, for anything that talks sql directly."""
+    return repository.session
