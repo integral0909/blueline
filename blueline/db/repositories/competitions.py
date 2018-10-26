@@ -1,0 +1,123 @@
+"""Striking competition sheets."""
+
+from __future__ import annotations
+
+from typing import List, Optional
+
+from datetime import date
+
+from sqlalchemy import func
+
+from blueline.core.competitions import Competition, Entry
+from blueline.db.base import Repository
+from blueline.db.models import StoredCompetition, StoredEntry
+from blueline.errors import LibraryError
+
+
+def to_stored_competition(competition: Competition) -> StoredCompetition:
+    """A sheet, ready to go in."""
+    return StoredCompetition(
+        name=competition.name.strip(),
+        held_on=competition.held_on,
+        place=competition.place.strip(),
+        stage=competition.stage,
+        judge=competition.judge.strip(),
+        entries=[
+            StoredEntry(
+                band=entry.band.strip(),
+                position=entry.position,
+                faults=entry.faults,
+                percentage=entry.percentage,
+                drift=entry.drift,
+                note=entry.note,
+            )
+            for entry in competition.ordered()
+        ],
+    )
+
+
+def to_competition(stored: StoredCompetition) -> Competition:
+    """A sheet, as the core's type."""
+    return Competition(
+        name=stored.name,
+        held_on=stored.held_on,
+        stage=stored.stage,
+        place=stored.place,
+        judge=stored.judge,
+        entries=tuple(
+            Entry(
+                band=entry.band,
+                position=entry.position,
+                faults=entry.faults,
+                percentage=entry.percentage,
+                drift=entry.drift,
+                note=entry.note,
+            )
+            for entry in stored.entries
+        ),
+    )
+
+
+class CompetitionRepository(Repository[StoredCompetition]):
+    """Competition sheets in the database."""
+
+    model = StoredCompetition
+
+    def add(self, competition: Competition) -> StoredCompetition:
+        if self.find(competition.name, competition.held_on) is not None:
+            raise LibraryError(
+                f"{competition.name} on {competition.held_on:%Y-%m-%d} is already stored"
+            )
+        return self.add_row(to_stored_competition(competition))
+
+    def find(self, name: str, held_on: date) -> Optional[StoredCompetition]:
+        statement = self.session.query(StoredCompetition).filter(
+            func.lower(StoredCompetition.name) == name.strip().lower(),
+            StoredCompetition.held_on == held_on,
+        )
+        return statement.one_or_none()
+
+    def get(self, competition_id: int) -> StoredCompetition:
+        found = self.get_by_id(competition_id)
+        if found is None:
+            raise LibraryError(f"no competition number {competition_id}")
+        return found
+
+    def remove(self, competition_id: int) -> None:
+        self.delete_row(self.get(competition_id))
+
+    def search(
+        self,
+        name: Optional[str] = None,
+        place: Optional[str] = None,
+        band: Optional[str] = None,
+        stage: Optional[int] = None,
+    ) -> List[StoredCompetition]:
+        """Sheets matching everything asked for, most recent first."""
+        statement = self.session.query(StoredCompetition)
+        if name is not None:
+            statement = statement.filter(StoredCompetition.name.ilike(f"%{name.strip()}%"))
+        if place is not None:
+            statement = statement.filter(StoredCompetition.place.ilike(f"%{place.strip()}%"))
+        if stage is not None:
+            statement = statement.filter(StoredCompetition.stage == stage)
+        if band is not None:
+            # Joined rather than filtered afterwards. A district with twenty
+            # years of sheets is a lot of rows to load in order to throw most
+            # of them away.
+            statement = statement.join(StoredEntry).filter(
+                StoredEntry.band.ilike(f"%{band.strip()}%")
+            )
+        statement = statement.order_by(StoredCompetition.held_on.desc(), StoredCompetition.name)
+        return list(statement.distinct().all())
+
+    def all(self) -> List[StoredCompetition]:
+        return self.search()
+
+    def sheets(self) -> List[Competition]:
+        """Everything stored, as the core's type."""
+        return [to_competition(stored) for stored in self.all()]
+
+    def for_band(self, band: str) -> List[Competition]:
+        """Every sheet a band appears on, as the core's type."""
+        return [to_competition(stored) for stored in self.search(band=band)]

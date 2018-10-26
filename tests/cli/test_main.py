@@ -328,7 +328,7 @@ class TestLineWorkDetail:
 
     def test_the_counts_match_what_the_service_says(self, runner, seeded):
         from blueline.api import deps
-        from blueline.db.repository import MethodRepository
+        from blueline.db.repositories import MethodRepository
         from blueline.service import analysis as service
 
         with deps.get_factory()() as session:

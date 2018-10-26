@@ -1,7 +1,7 @@
 import pytest
 
 from blueline.core.towers import Tower, Weight
-from blueline.db.repository import TowerRepository, to_stored_tower, to_tower
+from blueline.db.repositories import TowerRepository, to_stored_tower, to_tower
 from blueline.errors import LibraryError
 
 MARCHGATE = Tower(place="St Andrew, Marchgate", bells=8, tenor=Weight(23, 1, 14))

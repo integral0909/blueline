@@ -9,7 +9,7 @@ from datetime import date
 import pytest
 
 from blueline.core.competitions import Entry
-from blueline.db.repository import CompetitionRepository
+from blueline.db.repositories import CompetitionRepository
 from blueline.service.competitions import (
     band_progress,
     entries_from_times,

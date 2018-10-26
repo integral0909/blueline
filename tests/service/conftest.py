@@ -1,6 +1,6 @@
 import pytest
 
-from blueline.db.repository import (
+from blueline.db.repositories import (
     MethodRepository,
     PerformanceRepository,
     RingerRepository,

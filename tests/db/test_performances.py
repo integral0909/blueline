@@ -4,7 +4,7 @@ import pytest
 
 from blueline.core.bands import band_of
 from blueline.core.performance import Performance
-from blueline.db.repository import (
+from blueline.db.repositories import (
     MethodRepository,
     PerformanceRepository,
     to_performance,

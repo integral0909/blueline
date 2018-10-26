@@ -224,7 +224,7 @@ class TestLeaderboards:
 
 class TestTowerLink:
     def _towers(self, repository):
-        from blueline.db.repository import TowerRepository
+        from blueline.db.repositories import TowerRepository
         from blueline.service import towers as tower_service
 
         store = TowerRepository(repository.session)

@@ -25,7 +25,7 @@ from blueline.core.competitions import (
     improving,
     progress,
 )
-from blueline.db.repository import CompetitionRepository, to_competition
+from blueline.db.repositories import CompetitionRepository, to_competition
 from blueline.errors import LibraryError
 from blueline.service.results import Result, already_exists, invalid, not_found, succeeded
 from blueline.service.striking import order_of_merit

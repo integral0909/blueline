@@ -6,7 +6,7 @@ import pytest
 
 from blueline.db.base import Repository
 from blueline.db.models import StoredComposition, StoredMethod, StoredPerformance
-from blueline.db.repository import (
+from blueline.db.repositories import (
     CompositionRepository,
     MethodRepository,
     PerformanceRepository,

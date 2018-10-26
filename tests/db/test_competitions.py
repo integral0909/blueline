@@ -7,7 +7,7 @@ from datetime import date
 import pytest
 
 from blueline.core.competitions import Competition, Entry
-from blueline.db.repository import CompetitionRepository, to_competition
+from blueline.db.repositories import CompetitionRepository, to_competition
 from blueline.errors import LibraryError
 
 HELD = date(2023, 5, 6)

@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from blueline.core.method import Method
 from blueline.core.plans import Item, PlanError, plan_practice, ringable_by
 from blueline.core.ringers import enough_for
-from blueline.db.repository import (
+from blueline.db.repositories import (
     MethodRepository,
     RingerRepository,
     TowerRepository,

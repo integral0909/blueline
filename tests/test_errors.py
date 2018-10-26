@@ -70,7 +70,7 @@ class TestCatchingTheLot:
             parse_title("Cambridge")
 
     def test_a_missing_method_is_caught_by_the_base(self):
-        from blueline.db.repository import MethodRepository
+        from blueline.db.repositories import MethodRepository
         from blueline.db.session import MEMORY_URL, create_all, make_engine, session_factory
 
         engine = make_engine(MEMORY_URL)

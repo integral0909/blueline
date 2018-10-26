@@ -22,7 +22,7 @@ from blueline.core.board import WIDTH, render
 from blueline.core.performance import Performance
 from blueline.core.statistics import Totals, leaderboard, totals_of
 from blueline.db.models import StoredPerformance
-from blueline.db.repository import (
+from blueline.db.repositories import (
     MethodRepository,
     PerformanceRepository,
     TowerRepository,

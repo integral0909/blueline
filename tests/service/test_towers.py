@@ -1,6 +1,6 @@
 import pytest
 
-from blueline.db.repository import TowerRepository
+from blueline.db.repositories import TowerRepository
 from blueline.service import towers as service
 from blueline.service.results import Reason
 

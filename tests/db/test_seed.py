@@ -1,6 +1,6 @@
 import pytest
 
-from blueline.db.repository import MethodRepository
+from blueline.db.repositories import MethodRepository
 from blueline.db.seed import SeedReport, seed_standard
 from blueline.errors import LibraryError
 from blueline.library import standard_methods

@@ -1,6 +1,6 @@
 import pytest
 
-from blueline.db.repository import CompositionRepository, MethodRepository, to_method, to_stored
+from blueline.db.repositories import CompositionRepository, MethodRepository, to_method, to_stored
 from blueline.errors import LibraryError
 from blueline.library.builtin import standard_methods
 from tests.methods import CAMBRIDGE_MAJOR, CAMBRIDGE_MINOR, PLAIN_BOB_MINOR

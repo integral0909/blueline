@@ -17,7 +17,7 @@ from blueline.core.music import MusicCount
 from blueline.core.peals import Standing
 from blueline.core.spliced import Spliced, build_spliced, spliceable
 from blueline.core.truth import Repeat
-from blueline.db.repository import MethodRepository, to_method
+from blueline.db.repositories import MethodRepository, to_method
 from blueline.errors import BluelineError
 from blueline.service.proving import calls_for
 from blueline.service.reports import Outcome, outcome_of

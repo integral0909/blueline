@@ -1,7 +1,7 @@
 import pytest
 
 from blueline.core.ringers import Ringer
-from blueline.db.repository import RingerRepository, to_ringer, to_stored_ringer
+from blueline.db.repositories import RingerRepository, to_ringer, to_stored_ringer
 from blueline.errors import LibraryError
 
 CAMBRIDGE = "Cambridge Surprise Major"

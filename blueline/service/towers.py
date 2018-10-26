@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from blueline.core.towers import Tower, TowerError, Weight, parse_weight
 from blueline.db.models import StoredTower
-from blueline.db.repository import TowerRepository, to_tower
+from blueline.db.repositories import TowerRepository, to_tower
 from blueline.errors import BluelineError
 from blueline.service.results import Result, already_exists, invalid, not_found, succeeded
 

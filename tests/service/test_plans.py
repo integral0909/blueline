@@ -1,6 +1,6 @@
 import pytest
 
-from blueline.db.repository import TowerRepository
+from blueline.db.repositories import TowerRepository
 from blueline.service import plans as service
 from blueline.service import towers as tower_service
 from blueline.service.results import Reason
@@ -93,7 +93,7 @@ class TestWhatCanBeRung:
 
 class TestByWhatTheBandCanRing:
     def _band(self, repository):
-        from blueline.db.repository import RingerRepository
+        from blueline.db.repositories import RingerRepository
         from blueline.service import ringers as ringer_service
 
         store = RingerRepository(repository.session)
@@ -129,7 +129,7 @@ class TestByWhatTheBandCanRing:
         assert len(view.titles) > 1
 
     def test_an_empty_band_is_ignored_rather_than_ruling_everything_out(self, loaded, repository):
-        from blueline.db.repository import RingerRepository
+        from blueline.db.repositories import RingerRepository
 
         empty = RingerRepository(repository.session)
         view = service.plan(loaded, ringers=8, minutes=60, band=empty).unwrap()

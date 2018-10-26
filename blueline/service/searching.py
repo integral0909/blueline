@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from blueline.core.method import Method
 from blueline.core.quarters import Target, find_for, reachable
 from blueline.core.search import Found, Limits, search_callings
-from blueline.db.repository import MethodRepository, to_method
+from blueline.db.repositories import MethodRepository, to_method
 from blueline.service.proving import calls_for
 from blueline.service.results import Result, invalid, not_found, succeeded
 

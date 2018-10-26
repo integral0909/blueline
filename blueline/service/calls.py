@@ -7,7 +7,7 @@ from typing import List
 from dataclasses import dataclass
 
 from blueline.core.bobs import PositionError, calling_from, positions_in, positions_of
-from blueline.db.repository import MethodRepository, to_method
+from blueline.db.repositories import MethodRepository, to_method
 from blueline.service.proving import TouchReport, prove
 from blueline.service.results import Result, invalid, not_found, succeeded
 

@@ -16,7 +16,7 @@ from blueline.core.music import MusicCount
 from blueline.core.peals import Standing
 from blueline.core.touch import Touch, parse_calling, plain_course, repeat
 from blueline.core.truth import Repeat, extent_length, is_extent
-from blueline.db.repository import MethodRepository, to_method
+from blueline.db.repositories import MethodRepository, to_method
 from blueline.errors import BluelineError
 from blueline.service.reports import Outcome, outcome_of
 from blueline.service.results import Result, invalid, not_found, succeeded

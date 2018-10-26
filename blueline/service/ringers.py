@@ -20,7 +20,7 @@ from blueline.core.ringers import (
     what_the_band_can_ring,
 )
 from blueline.db.models import StoredRinger
-from blueline.db.repository import MethodRepository, RingerRepository, to_ringer
+from blueline.db.repositories import MethodRepository, RingerRepository, to_ringer
 from blueline.errors import BluelineError
 from blueline.service.results import Result, already_exists, invalid, not_found, succeeded
 

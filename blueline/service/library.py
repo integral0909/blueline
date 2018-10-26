@@ -12,7 +12,7 @@ from typing import List, Optional
 from blueline.analysis import MethodReport, analyse
 from blueline.core.method import Method
 from blueline.db.models import StoredMethod
-from blueline.db.repository import MethodRepository, to_method
+from blueline.db.repositories import MethodRepository, to_method
 from blueline.errors import BluelineError
 from blueline.io.documents import read, write_json, write_lines
 from blueline.io.loading import LoadError, LoadResult

@@ -17,7 +17,7 @@ from typing import List, Tuple
 
 from dataclasses import dataclass
 
-from blueline.db.repository import MethodRepository
+from blueline.db.repositories import MethodRepository
 from blueline.errors import LibraryError
 from blueline.library.builtin import standard_methods
 
