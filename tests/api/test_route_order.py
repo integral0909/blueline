@@ -15,6 +15,7 @@ import pytest
 
 from blueline.api.routers import (
     analysis_router,
+    callchanges_router,
     competitions_router,
     library_router,
     performances_router,
@@ -25,6 +26,7 @@ from blueline.api.routers import (
 ROUTERS = {
     "library": library_router,
     "competitions": competitions_router,
+    "callchanges": callchanges_router,
     "analysis": analysis_router,
     "performances": performances_router,
     "towers": towers_router,
