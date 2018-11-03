@@ -13,25 +13,12 @@ import re
 
 import pytest
 
-from blueline.api.routers import (
-    analysis_router,
-    callchanges_router,
-    competitions_router,
-    library_router,
-    performances_router,
-    plans_router,
-    towers_router,
-)
+from blueline.api.routers import ROUTERS as MOUNTED
 
-ROUTERS = {
-    "library": library_router,
-    "competitions": competitions_router,
-    "callchanges": callchanges_router,
-    "analysis": analysis_router,
-    "performances": performances_router,
-    "towers": towers_router,
-    "plans": plans_router,
-}
+# Every router, keyed by its tag so a failure names the subject rather than a
+# number. Built from what is actually mounted, because the list this replaced
+# had gone out of date twice and a router nobody added here was never checked.
+ROUTERS = {(router.tags[0] if router.tags else "untagged"): router for router in MOUNTED}
 
 PARAMETER = re.compile(r"\{[^}]+\}")
 

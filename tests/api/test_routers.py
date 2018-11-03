@@ -6,13 +6,12 @@ from typing import Set
 
 import pytest
 
-from blueline.api.routers import (
-    analysis_router,
-    library_router,
-    service_router,
-    touches_router,
-)
+from blueline.api.routers import ROUTERS as MOUNTED
+from blueline.api.routers.analysis import router as analysis_router
 from blueline.api.routers.common import STATUS_FOR, refuse, unwrap
+from blueline.api.routers.library import router as library_router
+from blueline.api.routers.service import router as service_router
+from blueline.api.routers.touches import router as touches_router
 from blueline.service.results import Failure, Reason, not_found, succeeded
 
 ROUTERS = {
@@ -61,6 +60,18 @@ class TestSplit:
     def test_every_router_is_tagged(self):
         for router in ROUTERS.values():
             assert router.tags
+
+
+class TestMountingOrder:
+    def test_every_router_is_mounted_once(self):
+        assert len({id(router) for router in MOUNTED}) == len(MOUNTED)
+
+    def test_the_library_is_mounted_before_the_analysis(self):
+        # /methods/export against /methods/{title}. This has bitten twice.
+        assert MOUNTED.index(library_router) < MOUNTED.index(analysis_router)
+
+    def test_nothing_is_mounted_twice(self):
+        assert len({id(router) for router in MOUNTED}) == len(MOUNTED)
 
 
 class TestMounted:

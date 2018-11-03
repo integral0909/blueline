@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from blueline.cli import render
+from tests.packages import duplicates, exported
 
 
 class TestFields:
@@ -41,5 +42,8 @@ class TestPackage:
         for name in ("method_table", "touch_table", "tower_table", "striking_table"):
             assert hasattr(render, name)
 
-    def test_nothing_is_exported_twice(self) -> None:
-        assert len(render.__all__) == len(set(render.__all__))
+    def test_nothing_is_exported_from_two_places(self) -> None:
+        assert duplicates(render) == set()
+
+    def test_every_subject_reaches_the_package(self) -> None:
+        assert {"method_table", "touch_table", "competition_table"} <= exported(render)

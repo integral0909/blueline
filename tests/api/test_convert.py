@@ -10,6 +10,7 @@ from blueline.core.music import count_music
 from blueline.core.peals import standing_of
 from blueline.core.rounds import RoundsAt
 from blueline.service.method_views import HandbellView, ImportReport
+from tests.packages import duplicates, exported
 
 MODULES = {"common": common, "methods": methods, "records": records, "touches": touches}
 
@@ -45,9 +46,11 @@ class TestSplit:
     def test_common_holds_what_more_than_one_subject_needs(self):
         assert "counted_music" in defined_in(common)
 
-    def test_the_package_exports_what_it_says(self):
-        for name in convert.__all__:
-            assert hasattr(convert, name)
+    def test_nothing_is_exported_from_two_places(self):
+        assert duplicates(convert) == set()
+
+    def test_every_subject_reaches_the_package(self):
+        assert {"method_out", "touch_out", "competition_out"} <= exported(convert)
 
 
 class TestCommon:
