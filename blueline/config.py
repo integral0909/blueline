@@ -29,6 +29,11 @@ class Settings:
     #: Load the standard methods into an empty database on startup.
     seed_on_start: bool = False
     echo_sql: bool = False
+    #: Requests one caller may make in a window, and how long the window is.
+    #: Per process rather than per service, which is the honest thing to say
+    #: about counting in a dictionary.
+    request_limit: int = 240
+    request_window: float = 60.0
 
     @property
     def is_in_memory(self) -> bool:
@@ -48,6 +53,23 @@ def _flag(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _number(name: str, default: int) -> int:
+    """Read a whole number out of the environment.
+
+    Anything that is not one falls back to the default rather than refusing to
+    start. A typo in a limit is not worth taking the service down for, and the
+    default is the safe direction to be wrong in.
+    """
+    raw = os.environ.get(ENV_PREFIX + name, "").strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    return value if value > 0 else default
+
+
 def from_env() -> Settings:
     """Settings as the environment describes them."""
     return Settings(
@@ -55,6 +77,8 @@ def from_env() -> Settings:
         create_tables=_flag("CREATE_TABLES", True),
         seed_on_start=_flag("SEED_ON_START", False),
         echo_sql=_flag("ECHO_SQL", False),
+        request_limit=_number("REQUEST_LIMIT", 240),
+        request_window=float(_number("REQUEST_WINDOW", 60)),
     )
 
 
