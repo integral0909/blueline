@@ -46,7 +46,7 @@ class TestRecording:
     def test_a_bad_date_is_unprocessable(self, seeded):
         response = seeded.post("/performances", json=a_performance(rang_on="last tuesday"))
         assert response.status_code == 422
-        assert response.json()["detail"]["reason"] == "invalid"
+        assert response.json()["reason"] == "invalid"
 
     def test_a_repeated_ringer_is_unprocessable(self, seeded):
         response = seeded.post(
@@ -82,7 +82,9 @@ class TestFetching:
 
 class TestListing:
     def test_an_empty_store_lists_nothing(self, seeded):
-        assert seeded.get("/performances").json() == {"count": 0, "performances": []}
+        body = seeded.get("/performances").json()
+        assert body["items"] == []
+        assert body["total"] == 0
 
     def test_it_lists_what_is_there(self, seeded):
         seeded.post("/performances", json=a_performance())
@@ -93,7 +95,7 @@ class TestListing:
         seeded.post("/performances", json=a_performance(rang_on="2023-01-01"))
         seeded.post("/performances", json=a_performance(rang_on="2023-06-01"))
         body = seeded.get("/performances").json()
-        assert body["performances"][0]["rang_on"] == "2023-06-01"
+        assert body["items"][0]["rang_on"] == "2023-06-01"
 
     def test_it_filters_by_place(self, seeded):
         seeded.post("/performances", json=a_performance())
@@ -208,7 +210,7 @@ class TestTowerLink:
             "/performances", json=a_performance(place="St Mary, Ashcombe", stage=8)
         )
         assert response.status_code == 422
-        assert "cannot ring 8" in response.json()["detail"]["detail"]
+        assert "cannot ring 8" in response.json()["detail"]
 
     def test_nothing_is_stored_when_the_tower_refuses(self, seeded):
         self._towers(seeded)

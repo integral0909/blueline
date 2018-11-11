@@ -35,7 +35,7 @@ class TestSplice:
             json={"titles": [*GROUP, "Bristol Surprise Major"], "order": "CYSLB"},
         )
         assert response.status_code == 422
-        assert "lead heads differ" in response.json()["detail"]["detail"]
+        assert "lead heads differ" in response.json()["detail"]
 
     def test_splicing_across_stages_is_unprocessable(self, seeded):
         response = seeded.post(

@@ -31,7 +31,7 @@ class TestAnalyse:
 
     def test_it_says_why(self, client):
         body = client.post("/analyse", json={"name": "x", "stage": 5, "notation": "x1x1"}).json()
-        assert body["detail"]["reason"] == "invalid"
+        assert body["reason"] == "invalid"
 
     def test_a_stage_out_of_range_is_rejected_by_the_schema(self, client):
         response = client.post("/analyse", json={"name": "x", "stage": 99, "notation": "x18"})
@@ -56,7 +56,7 @@ class TestStoring:
         client.post("/methods", json=CAMBRIDGE)
         response = client.post("/methods", json=CAMBRIDGE)
         assert response.status_code == 409
-        assert response.json()["detail"]["reason"] == "already-exists"
+        assert response.json()["reason"] == "already-exists"
 
 
 class TestFetching:
@@ -71,7 +71,7 @@ class TestFetching:
     def test_something_missing_is_a_404(self, seeded):
         response = seeded.get("/methods/Nowhere Surprise Major")
         assert response.status_code == 404
-        assert response.json()["detail"]["reason"] == "not-found"
+        assert response.json()["reason"] == "not-found"
 
 
 class TestListing:
@@ -80,14 +80,14 @@ class TestListing:
 
     def test_it_filters_by_name(self, seeded):
         body = seeded.get("/methods", params={"name": "cambridge"}).json()
-        assert [m["title"] for m in body["methods"]] == [
+        assert [m["title"] for m in body["items"]] == [
             "Cambridge Surprise Minor",
             "Cambridge Surprise Major",
         ]
 
     def test_it_filters_by_stage(self, seeded):
         body = seeded.get("/methods", params={"stage": 6}).json()
-        assert all(m["stage"] == 6 for m in body["methods"])
+        assert all(m["stage"] == 6 for m in body["items"])
 
     def test_it_filters_by_class(self, seeded):
         body = seeded.get("/methods", params={"classification": "Surprise", "stage": 8}).json()
@@ -95,7 +95,8 @@ class TestListing:
 
     def test_a_filter_matching_nothing_gives_an_empty_list(self, seeded):
         body = seeded.get("/methods", params={"name": "nowhere"}).json()
-        assert body == {"count": 0, "methods": []}
+        assert body["items"] == []
+        assert body["total"] == 0
 
     def test_a_stage_out_of_range_is_rejected(self, seeded):
         assert seeded.get("/methods", params={"stage": 99}).status_code == 422

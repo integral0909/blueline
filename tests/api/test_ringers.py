@@ -42,7 +42,9 @@ class TestAdding:
 
 class TestListing:
     def test_an_empty_tower_lists_nobody(self, client):
-        assert client.get("/ringers").json() == {"count": 0, "ringers": []}
+        body = client.get("/ringers").json()
+        assert body["items"] == []
+        assert body["total"] == 0
 
     def test_it_lists_everybody(self, client):
         a_band(client)
@@ -50,7 +52,7 @@ class TestListing:
 
     def test_they_come_back_in_name_order(self, client):
         a_band(client)
-        names = [entry["name"] for entry in client.get("/ringers").json()["ringers"]]
+        names = [entry["name"] for entry in client.get("/ringers").json()["items"]]
         assert names == sorted(names)
 
 

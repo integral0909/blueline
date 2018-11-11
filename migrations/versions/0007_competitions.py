@@ -47,9 +47,7 @@ def upgrade() -> None:
         sa.Column("drift", sa.String(length=16), nullable=False),
         sa.Column("note", sa.Text(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(
-            ["competition_id"], ["competitions.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["competition_id"], ["competitions.id"], ondelete="CASCADE"),
         sa.UniqueConstraint("competition_id", "band", name="uq_entries_competition_band"),
     )
     op.create_index("ix_entries_competition_id", "entries", ["competition_id"])

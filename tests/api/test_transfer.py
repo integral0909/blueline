@@ -68,7 +68,7 @@ class TestImport:
         body = {"body": '{"format": "something.else"}'}
         response = client.post("/methods/import", json=body)
         assert response.status_code == 422
-        assert response.json()["detail"]["reason"] == "invalid"
+        assert response.json()["reason"] == "invalid"
 
     def test_an_empty_body_is_rejected_by_the_schema(self, client):
         assert client.post("/methods/import", json={"body": ""}).status_code == 422

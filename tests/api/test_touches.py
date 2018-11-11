@@ -52,7 +52,7 @@ class TestProve:
     def test_a_calling_it_cannot_read_is_unprocessable(self, seeded):
         response = seeded.post("/methods/Plain Bob Minor/prove", json={"calling": "zzz"})
         assert response.status_code == 422
-        assert response.json()["detail"]["reason"] == "invalid"
+        assert response.json()["reason"] == "invalid"
 
     def test_an_empty_calling_is_rejected_by_the_schema(self, seeded):
         assert (

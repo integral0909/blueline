@@ -33,7 +33,7 @@ class TestAdding:
     def test_a_weight_it_cannot_read_is_unprocessable(self, client):
         response = client.post("/towers", json={**MARCHGATE, "tenor": "heavy"})
         assert response.status_code == 422
-        assert response.json()["detail"]["reason"] == "invalid"
+        assert response.json()["reason"] == "invalid"
 
     def test_a_nonsense_weight_is_unprocessable(self, client):
         assert client.post("/towers", json={**MARCHGATE, "tenor": "23-9-0"}).status_code == 422
@@ -62,7 +62,9 @@ class TestFetching:
 
 class TestListing:
     def test_an_empty_store_lists_nothing(self, client):
-        assert client.get("/towers").json() == {"count": 0, "towers": []}
+        body = client.get("/towers").json()
+        assert body["items"] == []
+        assert body["total"] == 0
 
     def test_it_lists_what_is_there(self, client):
         load(client)
@@ -71,7 +73,7 @@ class TestListing:
     def test_the_heaviest_comes_first(self, client):
         load(client)
         body = client.get("/towers").json()
-        assert body["towers"][0]["place"] == "All Saints, Kelbrook"
+        assert body["items"][0]["place"] == "All Saints, Kelbrook"
 
     def test_it_filters_by_place(self, client):
         load(client)
