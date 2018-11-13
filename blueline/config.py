@@ -7,16 +7,39 @@ passes on its own and fails when something else ran first.
 
 One object holds it now. Nothing assigns to a global from outside, and a test
 builds a Settings pointing at memory and hands it over.
+
+Three places it can come from, in order of who wins: a file, then the
+environment, then what is hard coded here. A file because a tower running this
+on a machine in the vestry wants to write the settings down once rather than
+export six variables in whatever starts it, and the environment on top because
+that is how anything containerised gets told anything.
 """
 
 from __future__ import annotations
 
+from typing import Optional, Set
+
 import os
-from dataclasses import dataclass
+import toml
+from dataclasses import dataclass, fields, replace
+from pathlib import Path
 
 from blueline.db.session import DEFAULT_URL, MEMORY_URL
 
 ENV_PREFIX = "BLUELINE_"
+
+#: Where the settings file is looked for when nobody says. The working
+#: directory rather than somewhere under the home directory, because a tower
+#: running two of these against two databases wants them side by side.
+DEFAULT_FILE = Path("blueline.toml")
+
+#: The table the settings live under, so the file can hold other things later
+#: without this having to guess which keys are its own.
+TABLE = "blueline"
+
+
+class ConfigError(Exception):
+    """A settings file that cannot be read."""
 
 
 @dataclass(frozen=True)
@@ -79,6 +102,68 @@ def from_env() -> Settings:
         echo_sql=_flag("ECHO_SQL", False),
         request_limit=_number("REQUEST_LIMIT", 240),
         request_window=float(_number("REQUEST_WINDOW", 60)),
+    )
+
+
+def from_file(path: Optional[Path] = None) -> Settings:
+    """Settings as a toml file describes them.
+
+    A missing file is not an error. The file is optional and the defaults are
+    a working configuration, so refusing to start because nobody wrote one
+    would be rude. A file that exists and cannot be read is an error, because
+    then somebody meant something by it.
+    """
+    where = path or DEFAULT_FILE
+    if not where.exists():
+        return Settings()
+
+    try:
+        document = toml.loads(where.read_text())
+    except (toml.TomlDecodeError, OSError) as error:
+        raise ConfigError(f"{where}: {error}") from error
+
+    table = document.get(TABLE, document)
+    if not isinstance(table, dict):
+        raise ConfigError(f"{where}: [{TABLE}] has to be a table")
+
+    known = {field.name for field in fields(Settings)}
+    unknown = set(table) - known
+    if unknown:
+        # Refused rather than ignored. A misspelled key that quietly does
+        # nothing is how somebody spends an afternoon wondering why the limit
+        # they set is not being applied.
+        raise ConfigError(f"{where}: nothing called {sorted(unknown)[0]!r}")
+
+    try:
+        return Settings(**table)
+    except TypeError as error:
+        raise ConfigError(f"{where}: {error}") from error
+
+
+def _named_in_environment() -> Set[str]:
+    """Which settings the environment actually mentions."""
+    return {
+        name
+        for name in (field.name for field in fields(Settings))
+        if ENV_PREFIX + name.upper() in os.environ
+    }
+
+
+def load(path: Optional[Path] = None) -> Settings:
+    """The settings, from the file and then the environment over the top.
+
+    Only what the environment actually names overrides the file. Reading the
+    environment into a whole Settings and using that would have every default
+    quietly overwrite whatever the file said.
+    """
+    settings = from_file(path)
+    named = _named_in_environment()
+    if not named:
+        return settings
+    from_environment = from_env()
+    return replace(
+        settings,
+        **{name: getattr(from_environment, name) for name in named},
     )
 
 

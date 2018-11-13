@@ -1,6 +1,16 @@
+import os
+
 import pytest
 
-from blueline.config import ENV_PREFIX, Settings, for_testing, from_env
+from blueline.config import (
+    ENV_PREFIX,
+    ConfigError,
+    Settings,
+    for_testing,
+    from_env,
+    from_file,
+    load,
+)
 from blueline.db.session import DEFAULT_URL, MEMORY_URL
 
 
@@ -81,3 +91,84 @@ class TestImmutability:
         settings = Settings()
         with pytest.raises(Exception):
             settings.database_url = MEMORY_URL  # type: ignore[misc]
+
+
+class TestFromFile:
+    def test_a_missing_file_is_the_defaults(self, tmp_path):
+        assert from_file(tmp_path / "nothing.toml") == Settings()
+
+    def test_it_reads_a_table(self, tmp_path):
+        path = tmp_path / "blueline.toml"
+        path.write_text('[blueline]\ndatabase_url = "sqlite:///ring.db"\n')
+        assert from_file(path).database_url == "sqlite:///ring.db"
+
+    def test_it_reads_a_bare_document_too(self, tmp_path):
+        path = tmp_path / "blueline.toml"
+        path.write_text('database_url = "sqlite:///ring.db"\n')
+        assert from_file(path).database_url == "sqlite:///ring.db"
+
+    def test_it_reads_a_number(self, tmp_path):
+        path = tmp_path / "blueline.toml"
+        path.write_text("[blueline]\nrequest_limit = 12\n")
+        assert from_file(path).request_limit == 12
+
+    def test_it_reads_a_flag(self, tmp_path):
+        path = tmp_path / "blueline.toml"
+        path.write_text("[blueline]\nseed_on_start = true\n")
+        assert from_file(path).seed_on_start is True
+
+    def test_what_it_does_not_mention_stays_default(self, tmp_path):
+        path = tmp_path / "blueline.toml"
+        path.write_text("[blueline]\nrequest_limit = 12\n")
+        assert from_file(path).create_tables is Settings().create_tables
+
+    def test_a_misspelled_key_is_refused(self, tmp_path):
+        path = tmp_path / "blueline.toml"
+        path.write_text("[blueline]\nrequest_limmit = 12\n")
+        with pytest.raises(ConfigError, match="request_limmit"):
+            from_file(path)
+
+    def test_a_file_that_is_not_toml(self, tmp_path):
+        path = tmp_path / "blueline.toml"
+        path.write_text("this is not toml = = =\n")
+        with pytest.raises(ConfigError):
+            from_file(path)
+
+    def test_a_table_that_is_not_a_table(self, tmp_path):
+        path = tmp_path / "blueline.toml"
+        path.write_text('blueline = "nope"\n')
+        with pytest.raises(ConfigError, match="has to be a table"):
+            from_file(path)
+
+
+class TestLoad:
+    def test_the_file_alone(self, tmp_path, monkeypatch):
+        for name in list(os.environ):
+            if name.startswith(ENV_PREFIX):
+                monkeypatch.delenv(name)
+        path = tmp_path / "blueline.toml"
+        path.write_text("[blueline]\nrequest_limit = 12\n")
+        assert load(path).request_limit == 12
+
+    def test_the_environment_wins(self, tmp_path, monkeypatch):
+        path = tmp_path / "blueline.toml"
+        path.write_text("[blueline]\nrequest_limit = 12\n")
+        monkeypatch.setenv(ENV_PREFIX + "REQUEST_LIMIT", "99")
+        assert load(path).request_limit == 99
+
+    def test_it_only_overrides_what_it_names(self, tmp_path, monkeypatch):
+        for name in list(os.environ):
+            if name.startswith(ENV_PREFIX):
+                monkeypatch.delenv(name)
+        path = tmp_path / "blueline.toml"
+        path.write_text('[blueline]\ndatabase_url = "sqlite:///ring.db"\nrequest_limit = 12\n')
+        monkeypatch.setenv(ENV_PREFIX + "REQUEST_LIMIT", "99")
+        settings = load(path)
+        assert settings.request_limit == 99
+        assert settings.database_url == "sqlite:///ring.db"
+
+    def test_nothing_anywhere_is_the_defaults(self, tmp_path, monkeypatch):
+        for name in list(os.environ):
+            if name.startswith(ENV_PREFIX):
+                monkeypatch.delenv(name)
+        assert load(tmp_path / "nothing.toml") == Settings()
