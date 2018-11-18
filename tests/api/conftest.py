@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from blueline.api import deps
 from blueline.api.app import create_app
 from blueline.config import Settings
-from blueline.db.session import MEMORY_URL
+from blueline.db.session import MEMORY_URL, create_all, drop_all, make_engine, session_factory
 
 
 @pytest.fixture()
@@ -25,3 +25,18 @@ def seeded():
     with TestClient(app) as opened:
         yield opened
     deps.reset()
+
+
+@pytest.fixture()
+def session():
+    """A session on a database that vanishes afterwards.
+
+    For the tests that build a repository directly rather than going through
+    a request.
+    """
+    engine = make_engine(MEMORY_URL)
+    create_all(engine)
+    factory = session_factory(engine)
+    with factory() as opened:
+        yield opened
+    drop_all(engine)
