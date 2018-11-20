@@ -30,6 +30,9 @@ from blueline.db.repositories import (
     to_tower,
 )
 from blueline.errors import BluelineError
+from blueline.io.bellboard import BellboardError
+from blueline.io.bellboard import read as read_report
+from blueline.io.bellboard import write as write_report
 from blueline.service.results import Result, invalid, not_found, succeeded
 
 
@@ -213,3 +216,50 @@ def board(
     except BluelineError:
         return not_found(f"no performance number {performance_id}")
     return succeeded(str(render(to_performance(found), width=width)))
+
+
+def report(
+    performances: PerformanceRepository,
+    performance_id: int,
+) -> Result[str]:
+    """One performance written up the way it gets submitted."""
+    try:
+        found = performances.get(performance_id)
+    except BluelineError:
+        return not_found(f"no performance number {performance_id}")
+    return succeeded(str(write_report(to_performance(found))))
+
+
+def from_report(
+    performances: PerformanceRepository,
+    methods: MethodRepository,
+    text: str,
+    stage: int,
+    towers: Optional[TowerRepository] = None,
+) -> Result[PerformanceView]:
+    """Read a report somebody pasted in and file what it says.
+
+    The report goes through the same record() every other route in does,
+    rather than straight into the repository. A performance that arrived as
+    text is not a performance with different rules: a ring of six still cannot
+    have rung major.
+    """
+    try:
+        performance = read_report(text, stage)
+    except BellboardError as error:
+        return invalid(str(error))
+
+    band = performance.band
+    return record(
+        performances,
+        methods,
+        title=performance.title,
+        stage=performance.stage,
+        length=performance.length,
+        rang_on=performance.rang_on.isoformat(),
+        place=performance.place,
+        ringers=list(band.ringers),
+        conductor=band.on(band.conductor),
+        composer=performance.composer,
+        towers=towers,
+    )
