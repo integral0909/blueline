@@ -18,6 +18,7 @@ can import it without importing every other table.
 
 from blueline.db.models.base import Base as Base
 from blueline.db.models.base import now as now
+from blueline.db.models.collections import StoredCollection as StoredCollection
 from blueline.db.models.competitions import StoredCompetition as StoredCompetition
 from blueline.db.models.competitions import StoredEntry as StoredEntry
 from blueline.db.models.methods import StoredComposition as StoredComposition

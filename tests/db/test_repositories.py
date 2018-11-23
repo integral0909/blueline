@@ -8,7 +8,7 @@ import pkgutil
 import blueline.db.repositories as package
 from tests.packages import duplicates, exported
 
-SUBJECTS = ["competitions", "methods", "performances", "ringers", "towers"]
+SUBJECTS = ["collections", "competitions", "methods", "performances", "ringers", "towers"]
 
 
 class TestPackage:

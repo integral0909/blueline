@@ -9,7 +9,7 @@ import blueline.db.models as package
 from blueline.db.models.base import Base
 from tests.packages import duplicates, exported
 
-SUBJECTS = ["base", "competitions", "methods", "ringers", "towers"]
+SUBJECTS = ["base", "collections", "competitions", "methods", "ringers", "towers"]
 
 
 class TestPackage:

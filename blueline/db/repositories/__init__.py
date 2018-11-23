@@ -20,6 +20,15 @@ update. Forgetting one meant the linter deleted the import and the failure
 turned up three files away.
 """
 
+from blueline.db.repositories.collections import (
+    CollectionRepository as CollectionRepository,
+)
+from blueline.db.repositories.collections import (
+    to_collection as to_collection,
+)
+from blueline.db.repositories.collections import (
+    to_stored_collection as to_stored_collection,
+)
 from blueline.db.repositories.competitions import (
     CompetitionRepository as CompetitionRepository,
 )
