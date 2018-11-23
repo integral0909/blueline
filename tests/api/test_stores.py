@@ -11,6 +11,7 @@ import pytest
 from blueline.api import stores
 from blueline.api.deps import get_session
 from blueline.db.repositories import (
+    CollectionRepository,
     CompetitionRepository,
     CompositionRepository,
     MethodRepository,
@@ -26,6 +27,7 @@ EXPECTED = {
     "towers": TowerRepository,
     "ringers": RingerRepository,
     "competitions": CompetitionRepository,
+    "collections": CollectionRepository,
 }
 
 
