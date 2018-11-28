@@ -20,10 +20,10 @@ class StoredMethod(Base):
 
     id = Column(Integer, primary_key=True)
     title = Column(String(120), index=True, nullable=False)
-    name = Column(String(80), nullable=False)
+    name = Column(String(80), index=True, nullable=False)
     stage = Column(Integer, index=True, nullable=False)
     notation = Column(Text, nullable=False)
-    classification = Column(String(40), nullable=True)
+    classification = Column(String(40), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=now, onupdate=now, nullable=False)
 

@@ -6,7 +6,18 @@ from typing import List
 
 from datetime import date, datetime
 
-from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 
 from blueline.db.models.base import Base, now
@@ -56,6 +67,9 @@ class StoredEntry(Base):
     __tablename__ = "entries"
     __table_args__ = (
         UniqueConstraint("competition_id", "band", name="uq_entries_competition_band"),
+        # Entries are always read as a whole set in the order announced, so
+        # the two columns belong in one index rather than two.
+        Index("ix_entries_position", "competition_id", "position"),
     )
 
     id = Column(Integer, primary_key=True)
