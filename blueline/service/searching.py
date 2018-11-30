@@ -1,16 +1,17 @@
-"""Looking for callings, either any true one or one at a length."""
+"""Looking for callings: any true one, one at a length, or a musical one."""
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from dataclasses import dataclass
 
 from blueline.core.method import Method
 from blueline.core.quarters import Target, find_for, reachable
+from blueline.core.scoring import Score, best_of, score_rows
 from blueline.core.search import Found, Limits, search_callings
 from blueline.db.repositories import MethodRepository, to_method
-from blueline.service.proving import calls_for
+from blueline.service.proving import build, calls_for
 from blueline.service.results import Result, invalid, not_found, succeeded
 
 
@@ -151,5 +152,110 @@ def for_length(
             why_not=None,
             found=tuple(found),
             exhausted=exhausted,
+        )
+    )
+
+
+@dataclass(frozen=True)
+class Ranked:
+    """One calling, with what it comes to and how musical it is."""
+
+    calling: str
+    leads: int
+    length: int
+    score: float
+    per_row: float
+    music: str
+
+    def __str__(self) -> str:
+        return f"{self.calling} ({self.length}), {self.score:.0f}"
+
+
+@dataclass(frozen=True)
+class MusicReport:
+    """The most musical of what a search turned up."""
+
+    title: str
+    considered: int
+    exhausted: bool
+    best: Tuple[Ranked, ...]
+
+    def summary(self) -> str:
+        if not self.best:
+            return f"{self.title}: nothing came round"
+        end = "searched to the end" if self.exhausted else "stopped early"
+        return f"{self.title}: {self.considered} callings tried, {end}"
+
+
+def most_musical(
+    repository: MethodRepository,
+    title: str,
+    min_length: int = 1,
+    max_length: int = 5040,
+    max_found: int = 200,
+    how_many: int = 10,
+    allowed: Optional[str] = None,
+    min_run: int = 4,
+) -> Result[MusicReport]:
+    """Search, then rank what came back on its music.
+
+    Two passes rather than one. Scoring inside the search would mean ringing
+    every branch through before knowing whether it comes round, and the whole
+    reason the search finishes at all is that it drops branches early.
+
+    That does mean what gets ranked is only what the search found, which is
+    capped. A wider cap costs time and is the caller's decision, so it is a
+    parameter rather than a number in here.
+    """
+    if how_many < 1:
+        return invalid("a ranking has to be allowed to hold something")
+
+    searched = search(
+        repository,
+        title,
+        min_length=min_length,
+        max_length=max_length,
+        max_found=max_found,
+        allowed=allowed,
+    )
+    if not searched.ok:
+        return Result(failure=searched.failure)
+    report = searched.unwrap()
+
+    stored = repository.find(title)
+    assert stored is not None
+    method = to_method(stored)
+
+    scored: List[Tuple[str, Score]] = []
+    keeping: Dict[str, Found] = {}
+    for each in report.found:
+        built = build(method, each.calling)
+        if not built.ok:
+            # The search produced it, so it parses. Skipping rather than
+            # raising keeps one odd calling from losing the whole ranking.
+            continue
+        scored.append((each.calling, score_rows(built.unwrap().rows(), min_run=min_run)))
+        keeping[each.calling] = each
+
+    best = []
+    for calling, score in best_of(scored, how_many):
+        entry = keeping[calling]
+        best.append(
+            Ranked(
+                calling=calling,
+                leads=entry.leads,
+                length=entry.length,
+                score=round(score.total, 1),
+                per_row=round(score.per_row, 4),
+                music=score.summary(),
+            )
+        )
+
+    return succeeded(
+        MusicReport(
+            title=report.title,
+            considered=len(report.found),
+            exhausted=report.exhausted,
+            best=tuple(best),
         )
     )

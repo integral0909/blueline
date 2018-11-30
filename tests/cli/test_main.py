@@ -615,3 +615,13 @@ class TestBoard:
     def test_one_that_is_not_there_exits_not_found(self, runner, seeded):
         result = runner.invoke(app, ["board", "999"])
         assert result.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+
+
+class TestMusical:
+    def test_it_ranks_what_it_finds(self, runner, seeded) -> None:
+        result = runner.invoke(app, ["musical", "Plain Bob Minor", "--wide", "30", "-n", "5"])
+        assert result.exit_code == 0
+        assert "callings tried" in result.stdout
+
+    def test_a_method_nobody_has_stored(self, runner, seeded) -> None:
+        assert runner.invoke(app, ["musical", "Weasel Major"]).exit_code != 0

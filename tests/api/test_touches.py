@@ -273,3 +273,37 @@ class TestCall:
     def test_a_method_that_is_not_there_is_a_404(self, seeded):
         response = seeded.post("/methods/Nowhere Surprise Major/call", json={"called": ["Home"]})
         assert response.status_code == 404
+
+
+class TestMusical:
+    def test_it_ranks_what_it_finds(self, seeded):
+        response = seeded.get("/methods/Plain Bob Minor/musical", params={"max_found": 30})
+        assert response.status_code == 200
+        assert response.json()["best"]
+
+    def test_the_best_comes_first(self, seeded):
+        body = seeded.get("/methods/Plain Bob Minor/musical", params={"max_found": 40}).json()
+        scores = [entry["per_row"] for entry in body["best"]]
+        assert scores == sorted(scores, reverse=True)
+
+    def test_the_ranking_can_be_cut_short(self, seeded):
+        body = seeded.get(
+            "/methods/Plain Bob Minor/musical",
+            params={"max_found": 40, "how_many": 3},
+        ).json()
+        assert len(body["best"]) <= 3
+
+    def test_every_entry_says_where_its_music_came_from(self, seeded):
+        body = seeded.get("/methods/Plain Bob Minor/musical", params={"max_found": 20}).json()
+        assert all(entry["music"] for entry in body["best"])
+
+    def test_a_method_nobody_has_stored(self, seeded):
+        assert seeded.get("/methods/Weasel Major/musical").status_code == 404
+
+    def test_a_ranking_that_holds_nothing_is_refused(self, seeded):
+        response = seeded.get("/methods/Plain Bob Minor/musical", params={"how_many": 0})
+        assert response.status_code == 422
+
+    def test_the_musical_route_is_not_read_as_a_bell(self, seeded):
+        response = seeded.get("/methods/Plain Bob Minor/musical", params={"max_found": 10})
+        assert response.status_code == 200
