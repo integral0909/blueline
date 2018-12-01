@@ -2,38 +2,30 @@
 
 from __future__ import annotations
 
-from typing import FrozenSet, List, Optional
+from typing import List, Optional
 
 from sqlalchemy import func
 
 from blueline.core.ringers import Ringer
+from blueline.core.titles import as_lines, from_lines
 from blueline.db.base import Repository
 from blueline.db.models import StoredRinger
 from blueline.errors import LibraryError
 
 
-def _lines(titles: FrozenSet[str]) -> str:
-    """Titles as text, sorted so two equal sets store identically."""
-    return "\n".join(sorted(titles))
-
-
-def _titles(text: str) -> FrozenSet[str]:
-    return frozenset(line.strip() for line in text.splitlines() if line.strip())
-
-
 def to_stored_ringer(ringer: Ringer) -> StoredRinger:
     return StoredRinger(
         name=ringer.name.strip(),
-        can_ring=_lines(ringer.can_ring),
-        learning=_lines(ringer.learning),
+        can_ring=as_lines(ringer.can_ring),
+        learning=as_lines(ringer.learning),
     )
 
 
 def to_ringer(stored: StoredRinger) -> Ringer:
     return Ringer(
         name=stored.name,
-        can_ring=_titles(stored.can_ring),
-        learning=_titles(stored.learning),
+        can_ring=from_lines(stored.can_ring),
+        learning=from_lines(stored.learning),
     )
 
 
@@ -64,8 +56,8 @@ class RingerRepository(Repository[StoredRinger]):
         existing = self.find(ringer.name)
         if existing is None:
             return self.add(ringer)
-        existing.can_ring = _lines(ringer.can_ring)
-        existing.learning = _lines(ringer.learning)
+        existing.can_ring = as_lines(ringer.can_ring)
+        existing.learning = as_lines(ringer.learning)
         self.session.flush()
         return existing
 

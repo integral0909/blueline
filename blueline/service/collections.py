@@ -22,11 +22,11 @@ from blueline.core.collections import (
     Collection,
     CollectionError,
     covered_by,
-    fold,
     missing_from,
 )
 from blueline.core.learning import Difficulty, difficulty_of, in_order
 from blueline.core.spliced import spliceable
+from blueline.core.titles import fold, from_lines
 from blueline.db.repositories import (
     CollectionRepository,
     MethodRepository,
@@ -240,12 +240,12 @@ def coverage(
         ringer = ringers.find(who)
         if ringer is None:
             return not_found(f"no ringer called {who!r}")
-        known = {title for title in ringer.can_ring.splitlines() if title.strip()}
+        known = set(from_lines(ringer.can_ring))
         label = f"{collection.name} for {ringer.name}"
     else:
         known = set()
         for each in ringers.all():
-            known |= {title for title in each.can_ring.splitlines() if title.strip()}
+            known |= set(from_lines(each.can_ring))
         label = f"{collection.name} across the band"
 
     left = missing_from(collection, known)

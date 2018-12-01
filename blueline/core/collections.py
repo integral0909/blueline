@@ -21,6 +21,7 @@ from typing import FrozenSet, Set, Tuple
 
 from dataclasses import dataclass, field
 
+from blueline.core.titles import fold, holds, in_order, without
 from blueline.errors import BluelineError
 
 #: Nothing anybody would call a set. Past this it is a library.
@@ -29,11 +30,6 @@ MOST_TITLES = 200
 
 class CollectionError(BluelineError):
     """A collection that does not make sense."""
-
-
-def fold(title: str) -> str:
-    """A title as it compares, which is not how it prints."""
-    return " ".join(title.strip().lower().split())
 
 
 @dataclass(frozen=True)
@@ -62,12 +58,12 @@ class Collection:
     def __contains__(self, title: object) -> bool:
         if not isinstance(title, str):
             return False
-        return fold(title) in {fold(each) for each in self.titles}
+        return holds(self.titles, title)
 
     @property
     def sorted(self) -> Tuple[str, ...]:
         """The titles in name order, which is how a list of them prints."""
-        return tuple(sorted(self.titles, key=fold))
+        return in_order(self.titles)
 
     def with_added(self, title: str) -> Collection:
         if title in self:
@@ -81,10 +77,9 @@ class Collection:
     def without(self, title: str) -> Collection:
         if title not in self:
             raise CollectionError(f"{title} is not in {self.name}")
-        wanted = fold(title)
         return Collection(
             name=self.name,
-            titles=frozenset(each for each in self.titles if fold(each) != wanted),
+            titles=without(self.titles, title),
             note=self.note,
         )
 

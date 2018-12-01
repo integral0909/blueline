@@ -2,28 +2,21 @@
 
 from __future__ import annotations
 
-from typing import FrozenSet, List, Optional
+from typing import List, Optional
 
 from sqlalchemy import func
 
-from blueline.core.collections import Collection, fold
+from blueline.core.collections import Collection
+from blueline.core.titles import as_lines, from_lines
 from blueline.db.base import Repository
 from blueline.db.models import StoredCollection
 from blueline.errors import LibraryError
 
 
-def _lines(titles: FrozenSet[str]) -> str:
-    return "\n".join(sorted(titles, key=fold))
-
-
-def _titles(text: str) -> FrozenSet[str]:
-    return frozenset(line.strip() for line in text.splitlines() if line.strip())
-
-
 def to_stored_collection(collection: Collection) -> StoredCollection:
     return StoredCollection(
         name=collection.name.strip(),
-        titles=_lines(collection.titles),
+        titles=as_lines(collection.titles),
         note=collection.note.strip(),
     )
 
@@ -31,7 +24,7 @@ def to_stored_collection(collection: Collection) -> StoredCollection:
 def to_collection(stored: StoredCollection) -> Collection:
     return Collection(
         name=stored.name,
-        titles=_titles(stored.titles),
+        titles=from_lines(stored.titles),
         note=stored.note,
     )
 
@@ -63,7 +56,7 @@ class CollectionRepository(Repository[StoredCollection]):
         existing = self.find(collection.name)
         if existing is None:
             return self.add(collection)
-        existing.titles = _lines(collection.titles)
+        existing.titles = as_lines(collection.titles)
         existing.note = collection.note.strip()
         self.session.flush()
         return existing

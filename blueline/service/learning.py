@@ -17,6 +17,7 @@ from dataclasses import dataclass
 
 from blueline.analysis import analyse
 from blueline.core.learning import Difficulty, difficulty_of, in_order, next_after, step_up
+from blueline.core.titles import from_lines
 from blueline.db.repositories import MethodRepository, RingerRepository, to_method
 from blueline.service.results import Result, invalid, not_found, succeeded
 
@@ -80,7 +81,7 @@ def advise(
     if stored is None:
         return not_found(f"no ringer called {name!r}")
 
-    knows = {title for title in stored.can_ring.splitlines() if title.strip()}
+    knows = set(from_lines(stored.can_ring))
     everything = _everything(methods)
     return succeeded(
         AdviceView(
@@ -111,5 +112,5 @@ def advise_a_band(
 
     known: Set[str] = set()
     for stored in everybody:
-        known |= {title for title in stored.can_ring.splitlines() if title.strip()}
+        known |= set(from_lines(stored.can_ring))
     return succeeded(next_after(_everything(methods), known, how_many))

@@ -18,6 +18,7 @@ from typing import Dict, FrozenSet, List
 
 from dataclasses import dataclass, field
 
+from blueline.core.titles import fold
 from blueline.errors import BluelineError
 
 
@@ -41,10 +42,10 @@ class Ringer:
             raise RingerError(f"{self.name} cannot be both ringing and learning {sorted(both)[0]}")
 
     def rings(self, title: str) -> bool:
-        return _fold(title) in {_fold(each) for each in self.can_ring}
+        return fold(title) in {fold(each) for each in self.can_ring}
 
     def is_learning(self, title: str) -> bool:
-        return _fold(title) in {_fold(each) for each in self.learning}
+        return fold(title) in {fold(each) for each in self.learning}
 
     def knows_anything_of(self, title: str) -> bool:
         return self.rings(title) or self.is_learning(title)
@@ -54,15 +55,11 @@ class Ringer:
         return Ringer(
             name=self.name,
             can_ring=self.can_ring | {title},
-            learning=frozenset(each for each in self.learning if _fold(each) != _fold(title)),
+            learning=frozenset(each for each in self.learning if fold(each) != fold(title)),
         )
 
     def __str__(self) -> str:
         return f"{self.name} ({len(self.can_ring)} methods)"
-
-
-def _fold(title: str) -> str:
-    return title.strip().lower()
 
 
 def who_can_ring(ringers: List[Ringer], title: str) -> List[str]:
