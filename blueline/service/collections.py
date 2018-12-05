@@ -81,11 +81,15 @@ class CoverageView:
         return f"{self.name}: {self.rings} of {self.size}, {self.share:.0%}"
 
 
-def _collection(
+def resolve(
     collections: CollectionRepository,
     name: str,
 ) -> Result[Collection]:
-    """A stored set, or one of the ones everybody names."""
+    """A stored set, or one of the ones everybody names.
+
+    Public because the term planner works from a set too, and a private
+    function imported across modules is a private function in name only.
+    """
     stored = collections.find(name)
     if stored is not None:
         return succeeded(to_collection(stored))
@@ -160,7 +164,7 @@ def fetch(
     methods: MethodRepository,
     name: str,
 ) -> Result[CollectionView]:
-    found = _collection(collections, name)
+    found = resolve(collections, name)
     if not found.ok:
         return Result(failure=found.failure)
     return succeeded(view_of(found.unwrap(), methods))
@@ -231,7 +235,7 @@ def coverage(
     who: Optional[str] = None,
 ) -> Result[CoverageView]:
     """How much of a set a ringer, or the whole band, rings."""
-    found = _collection(collections, name)
+    found = resolve(collections, name)
     if not found.ok:
         return Result(failure=found.failure)
     collection = found.unwrap()
