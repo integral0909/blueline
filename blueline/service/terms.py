@@ -25,7 +25,7 @@ from blueline.core.calendar import DAY_NAMES, CalendarError, clashes, practice_n
 from blueline.core.learning import Difficulty
 from blueline.db.repositories import CollectionRepository, MethodRepository, RingerRepository
 from blueline.service.collections import resolve
-from blueline.service.learning import advise_a_band
+from blueline.service.learning import advise_a_band, rank
 from blueline.service.results import Result, invalid, not_found, succeeded
 
 #: How many nights a method of each difficulty gets. A learner's method is one
@@ -167,6 +167,14 @@ def plan_term(
     )
 
 
+def _ranked_library(methods: MethodRepository, how_many: int) -> Result[List[Difficulty]]:
+    """The library in order, for a tower with no band entered."""
+    ranked = rank(methods)
+    if not ranked.ok:
+        return ranked
+    return succeeded(ranked.unwrap()[:how_many])
+
+
 def _wanted(
     methods: MethodRepository,
     ringers: RingerRepository,
@@ -178,7 +186,13 @@ def _wanted(
     if working_from is None:
         # One method per night at worst, so never ask for more than there are
         # nights: the advice is capped and asking wide costs nothing here.
-        return advise_a_band(methods, ringers, how_many=min(nights, 10))
+        advised = advise_a_band(methods, ringers, how_many=min(nights, 10))
+        if advised.ok:
+            return advised
+        # Nobody entered on the books. A tower that has not typed its band in
+        # still wants a term plan, so fall back to the library in order. It is
+        # worse advice and it is advice.
+        return _ranked_library(methods, min(nights, 10))
 
     found = resolve(collections, working_from)
     if not found.ok:

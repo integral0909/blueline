@@ -82,3 +82,25 @@ class TestByAbility:
         result = runner.invoke(app, ["plan", "8", "60"])
         assert result.exit_code == 0
         assert "beyond the band" not in result.stdout
+
+
+class TestTerm:
+    def test_it_lays_out_the_nights(self, runner, seeded) -> None:
+        result = runner.invoke(app, ["term", "2023-09-05", "2023-12-19"])
+        assert result.exit_code == 0
+        assert "Tuesdays" in result.stdout
+
+    def test_another_night_can_be_asked_for(self, runner, seeded) -> None:
+        result = runner.invoke(app, ["term", "2023-09-05", "2023-12-19", "-n", "3"])
+        assert "Thursdays" in result.stdout
+
+    def test_it_can_work_from_a_named_set(self, runner, seeded) -> None:
+        result = runner.invoke(app, ["term", "2023-09-05", "2023-12-19", "-f", "the standard four"])
+        assert result.exit_code == 0
+
+    def test_a_set_nobody_names(self, runner, seeded) -> None:
+        result = runner.invoke(app, ["term", "2023-09-05", "2023-12-19", "-f", "the weasel four"])
+        assert result.exit_code != 0
+
+    def test_more_than_a_term(self, runner, seeded) -> None:
+        assert runner.invoke(app, ["term", "2023-01-01", "2025-01-01"]).exit_code != 0

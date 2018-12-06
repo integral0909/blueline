@@ -95,3 +95,46 @@ class TestByAbility:
     def test_with_nobody_stored_nothing_is_filtered(self, seeded):
         body = seeded.get("/plan", params={"ringers": 8, "minutes": 60}).json()
         assert body["titles"]
+
+
+class TestTerm:
+    def a_term(self, **over) -> dict:
+        params = {"first": "2023-09-05", "last": "2023-12-19"}
+        params.update(over)
+        return params
+
+    def test_it_lays_out_the_nights(self, seeded):
+        response = seeded.get("/term", params=self.a_term())
+        assert response.status_code == 200
+        assert response.json()["count"] > 10
+
+    def test_every_night_is_a_tuesday(self, seeded):
+        body = seeded.get("/term", params=self.a_term()).json()
+        assert body["night"] == "Tuesday"
+
+    def test_another_night_can_be_asked_for(self, seeded):
+        body = seeded.get("/term", params=self.a_term(weekday=3)).json()
+        assert body["night"] == "Thursday"
+
+    def test_it_puts_something_against_each(self, seeded):
+        body = seeded.get("/term", params=self.a_term()).json()
+        assert all(night["method"] or night["note"] for night in body["nights"])
+
+    def test_it_can_work_from_a_named_set(self, seeded):
+        body = seeded.get("/term", params=self.a_term(working_from="the standard four")).json()
+        assert body["methods"]
+
+    def test_a_set_nobody_names(self, seeded):
+        response = seeded.get("/term", params=self.a_term(working_from="the weasel four"))
+        assert response.status_code == 404
+
+    def test_more_than_a_term_is_refused(self, seeded):
+        response = seeded.get("/term", params=self.a_term(last="2025-12-19"))
+        assert response.status_code == 422
+
+    def test_a_range_the_wrong_way_round(self, seeded):
+        response = seeded.get("/term", params=self.a_term(last="2023-01-01"))
+        assert response.status_code == 422
+
+    def test_a_day_that_does_not_exist(self, seeded):
+        assert seeded.get("/term", params=self.a_term(weekday=9)).status_code == 422

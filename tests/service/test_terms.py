@@ -146,3 +146,23 @@ class TestEdges:
         keep(collections, loaded, "One", ["Plain Bob Minor"])
         view = plan_term(loaded, band, collections, *AUTUMN, working_from="One").unwrap()
         assert any("fancies" in night.note for night in view.nights)
+
+
+class TestNoBandEntered:
+    """A tower that has not typed its band in still wants a plan."""
+
+    def test_it_falls_back_to_the_library(self, loaded, ringers, collections) -> None:
+        view = plan_term(loaded, ringers, collections, *AUTUMN).unwrap()
+        assert view.methods
+
+    def test_it_still_starts_with_something_easy(self, loaded, ringers, collections) -> None:
+        view = plan_term(loaded, ringers, collections, *AUTUMN).unwrap()
+        assert view.methods[0] == "Plain Bob Doubles"
+
+    def test_an_empty_library_leaves_every_night_open(self, session, ringers) -> None:
+        from blueline.db.repositories import CollectionRepository, MethodRepository
+
+        empty = MethodRepository(session)
+        view = plan_term(empty, ringers, CollectionRepository(session), *AUTUMN).unwrap()
+        assert view.methods == ()
+        assert all(night.note for night in view.nights)
