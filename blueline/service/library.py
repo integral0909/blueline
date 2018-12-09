@@ -16,8 +16,9 @@ from blueline.db.repositories import MethodRepository, to_method
 from blueline.errors import BluelineError
 from blueline.io.documents import read, write_json, write_lines
 from blueline.io.loading import LoadError, LoadResult
+from blueline.service.lookups import stored_method
 from blueline.service.method_views import ImportReport
-from blueline.service.results import Result, already_exists, invalid, not_found, succeeded
+from blueline.service.results import Result, already_exists, invalid, succeeded
 
 
 def parse_method(name: str, stage: int, notation: str) -> Result[Method]:
@@ -52,16 +53,18 @@ def store(
 
 def fetch(repository: MethodRepository, title: str) -> Result[MethodReport]:
     """The analysis of a stored method, looked up by title."""
-    stored = repository.find(title)
-    if stored is None:
-        return not_found(f"no method called {title!r}")
+    looked_up = stored_method(repository, title)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     return succeeded(analyse(to_method(stored)))
 
 
 def remove(repository: MethodRepository, title: str) -> Result[str]:
-    stored = repository.find(title)
-    if stored is None:
-        return not_found(f"no method called {title!r}")
+    looked_up = stored_method(repository, title)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     repository.remove(stored.title)
     return succeeded(stored.title)
 

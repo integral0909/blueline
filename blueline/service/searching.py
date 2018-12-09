@@ -11,8 +11,9 @@ from blueline.core.quarters import Target, find_for, reachable
 from blueline.core.scoring import Score, best_of, score_rows
 from blueline.core.search import Found, Limits, search_callings
 from blueline.db.repositories import MethodRepository, to_method
+from blueline.service.lookups import stored_method
 from blueline.service.proving import build, calls_for
-from blueline.service.results import Result, invalid, not_found, succeeded
+from blueline.service.results import Result, invalid, succeeded
 
 
 @dataclass(frozen=True)
@@ -41,9 +42,10 @@ def search(
     allowed: Optional[str] = None,
 ) -> Result[SearchReport]:
     """Look for callings of a stored method that come round and are true."""
-    stored = repository.find(title)
-    if stored is None:
-        return not_found(f"no method called {title!r}")
+    looked_up = stored_method(repository, title)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     if min_length > max_length:
         return invalid(f"{min_length} is longer than the {max_length} asked for")
     if max_found < 1:
@@ -112,9 +114,10 @@ def for_length(
     allowed: Optional[str] = None,
 ) -> Result[TargetReport]:
     """Look for callings that come round true at a particular length."""
-    stored = repository.find(title)
-    if stored is None:
-        return not_found(f"no method called {title!r}")
+    looked_up = stored_method(repository, title)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     try:
         target = Target(length=length, tolerance=tolerance)
     except ValueError as error:

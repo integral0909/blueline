@@ -8,8 +8,9 @@ from dataclasses import dataclass
 
 from blueline.core.bobs import PositionError, calling_from, positions_in, positions_of
 from blueline.db.repositories import MethodRepository, to_method
+from blueline.service.lookups import stored_method
 from blueline.service.proving import TouchReport, prove
-from blueline.service.results import Result, invalid, not_found, succeeded
+from blueline.service.results import Result, invalid, succeeded
 
 
 @dataclass(frozen=True)
@@ -23,9 +24,10 @@ class PositionView:
 
 def positions(repository: MethodRepository, title: str) -> Result[List[PositionView]]:
     """The named calling positions in a method's plain course."""
-    stored = repository.find(title)
-    if stored is None:
-        return not_found(f"no method called {title!r}")
+    looked_up = stored_method(repository, title)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     return succeeded(
         [
             PositionView(name=p.name, lead=p.lead, tenor_place=p.tenor_place)
@@ -44,9 +46,10 @@ def prove_positions(
     Wrong, Home, Home rather than one symbol per lead. The two are the same
     thing and turning one into the other by hand is where mistakes come from.
     """
-    stored = repository.find(title)
-    if stored is None:
-        return not_found(f"no method called {title!r}")
+    looked_up = stored_method(repository, title)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     method = to_method(stored)
     try:
         calling = calling_from(method, called)
@@ -61,7 +64,8 @@ def calling_as_positions(
     calling: str,
 ) -> Result[List[str]]:
     """Read a calling back as the positions a conductor would say."""
-    stored = repository.find(title)
-    if stored is None:
-        return not_found(f"no method called {title!r}")
+    looked_up = stored_method(repository, title)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     return succeeded(positions_in(to_method(stored), calling))

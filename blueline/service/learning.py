@@ -19,6 +19,7 @@ from blueline.analysis import analyse
 from blueline.core.learning import Difficulty, difficulty_of, in_order, next_after, step_up
 from blueline.core.titles import from_lines
 from blueline.db.repositories import MethodRepository, RingerRepository, to_method
+from blueline.service.lookups import stored_method, stored_ringer
 from blueline.service.results import Result, invalid, not_found, succeeded
 
 #: How many suggestions anybody wants at once. More than a handful is a
@@ -60,9 +61,10 @@ def rank(methods: MethodRepository, stage: Optional[int] = None) -> Result[List[
 
 def how_hard(methods: MethodRepository, title: str) -> Result[Difficulty]:
     """What one method is going to ask of somebody."""
-    stored = methods.find(title)
-    if stored is None:
-        return not_found(f"no method called {title!r}")
+    looked_up = stored_method(methods, title)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     method = to_method(stored)
     return succeeded(difficulty_of(analyse(method, name=stored.name), method))
 
@@ -77,9 +79,10 @@ def advise(
     if not 1 <= how_many <= MOST_SUGGESTIONS:
         return invalid(f"between 1 and {MOST_SUGGESTIONS} suggestions, not {how_many}")
 
-    stored = ringers.find(name)
-    if stored is None:
-        return not_found(f"no ringer called {name!r}")
+    looked_up = stored_ringer(ringers, name)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
 
     knows = set(from_lines(stored.can_ring))
     everything = _everything(methods)

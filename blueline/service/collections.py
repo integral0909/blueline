@@ -35,6 +35,7 @@ from blueline.db.repositories import (
     to_method,
 )
 from blueline.errors import LibraryError
+from blueline.service.lookups import stored_ringer
 from blueline.service.results import Result, already_exists, invalid, not_found, succeeded
 
 
@@ -241,9 +242,10 @@ def coverage(
     collection = found.unwrap()
 
     if who is not None:
-        ringer = ringers.find(who)
-        if ringer is None:
-            return not_found(f"no ringer called {who!r}")
+        looked_up = stored_ringer(ringers, who)
+        if not looked_up.ok:
+            return Result(failure=looked_up.failure)
+        ringer = looked_up.unwrap()
         known = set(from_lines(ringer.can_ring))
         label = f"{collection.name} for {ringer.name}"
     else:

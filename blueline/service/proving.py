@@ -18,8 +18,9 @@ from blueline.core.touch import Touch, parse_calling, plain_course, repeat
 from blueline.core.truth import Repeat, extent_length, is_extent
 from blueline.db.repositories import MethodRepository, to_method
 from blueline.errors import BluelineError
+from blueline.service.lookups import stored_method
 from blueline.service.reports import Outcome, outcome_of
-from blueline.service.results import Result, invalid, not_found, succeeded
+from blueline.service.results import Result, invalid, succeeded
 
 #: Methods called the Grandsire way rather than the Plain Bob way.
 GRANDSIRE_NAMES = frozenset({"Grandsire", "Reverse Grandsire", "Double Grandsire"})
@@ -127,9 +128,10 @@ def prove(
     times: int = 1,
 ) -> Result[TouchReport]:
     """Prove a touch of a stored method."""
-    stored = repository.find(title)
-    if stored is None:
-        return not_found(f"no method called {title!r}")
+    looked_up = stored_method(repository, title)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     if times < 1:
         return invalid(f"cannot ring a block {times} times")
     built = build(to_method(stored), calling, times)
@@ -140,7 +142,8 @@ def prove(
 
 def course_of(repository: MethodRepository, title: str) -> Result[TouchReport]:
     """The plain course, reported the same way a touch is."""
-    stored = repository.find(title)
-    if stored is None:
-        return not_found(f"no method called {title!r}")
+    looked_up = stored_method(repository, title)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     return succeeded(report_on(plain_course(to_method(stored)), stored.title))

@@ -19,9 +19,10 @@ from blueline.core.spliced import Spliced, build_spliced, spliceable
 from blueline.core.truth import Repeat
 from blueline.db.repositories import MethodRepository, to_method
 from blueline.errors import BluelineError
+from blueline.service.lookups import stored_method
 from blueline.service.proving import calls_for
 from blueline.service.reports import Outcome, outcome_of
-from blueline.service.results import Result, invalid, not_found, succeeded
+from blueline.service.results import Result, invalid, succeeded
 
 
 @dataclass(frozen=True)
@@ -79,9 +80,10 @@ def gather(repository: MethodRepository, titles: List[str]) -> Result[Dict[str, 
     """Look up the methods a splice needs, keyed by their bare names."""
     found: Dict[str, Method] = {}
     for title in titles:
-        stored = repository.find(title)
-        if stored is None:
-            return not_found(f"no method called {title!r}")
+        looked_up = stored_method(repository, title)
+        if not looked_up.ok:
+            return Result(failure=looked_up.failure)
+        stored = looked_up.unwrap()
         method = to_method(stored)
         if method.name[0].upper() in {name[0].upper() for name in found}:
             return invalid(f"{method.name} and another method share an initial")

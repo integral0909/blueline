@@ -23,6 +23,7 @@ from blueline.db.repositories import (
     CompositionRepository,
     MethodRepository,
 )
+from blueline.service.lookups import stored_method
 from blueline.service.proving import TouchReport, prove
 from blueline.service.results import Result, invalid, not_found, succeeded
 
@@ -102,11 +103,12 @@ def store(
     if len(name) > LONGEST_TITLE:
         return invalid(f"a title is at most {LONGEST_TITLE} characters")
 
-    stored_method = methods.find(method_title)
-    if stored_method is None:
-        return not_found(f"no method called {method_title!r}")
+    looked_up = stored_method(methods, method_title)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
 
-    report = prove(methods, stored_method.title, calling)
+    report = prove(methods, stored.title, calling)
     if not report.ok:
         return Result(failure=report.failure)
     proved = report.unwrap()
@@ -116,7 +118,7 @@ def store(
         return invalid(f"{proved.final_row} is not rounds, so that is not a touch")
 
     kept = compositions.add(
-        method=stored_method,
+        method=stored,
         title=name,
         calling=calling.strip(),
         length=proved.length,
@@ -143,12 +145,13 @@ def for_method(
     method_title: str,
 ) -> Result[List[CompositionView]]:
     """Everything written for one method, longest first."""
-    stored_method = methods.find(method_title)
-    if stored_method is None:
-        return not_found(f"no method called {method_title!r}")
+    looked_up = stored_method(methods, method_title)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored_row = looked_up.unwrap()
 
     views: List[CompositionView] = []
-    for stored in compositions.for_method(stored_method):
+    for stored in compositions.for_method(stored_row):
         proved = _reprove(methods, stored)
         if proved.ok:
             views.append(proved.unwrap())

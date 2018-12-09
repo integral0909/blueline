@@ -22,7 +22,8 @@ from blueline.core.ringers import (
 from blueline.db.models import StoredRinger
 from blueline.db.repositories import MethodRepository, RingerRepository, to_ringer
 from blueline.errors import BluelineError
-from blueline.service.results import Result, already_exists, invalid, not_found, succeeded
+from blueline.service.lookups import stored_ringer
+from blueline.service.results import Result, already_exists, invalid, succeeded
 
 
 @dataclass(frozen=True)
@@ -82,16 +83,18 @@ def add(
 
 
 def fetch(repository: RingerRepository, name: str) -> Result[RingerView]:
-    stored = repository.find(name)
-    if stored is None:
-        return not_found(f"no ringer called {name!r}")
+    looked_up = stored_ringer(repository, name)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     return succeeded(view_of(stored))
 
 
 def remove(repository: RingerRepository, name: str) -> Result[str]:
-    stored = repository.find(name)
-    if stored is None:
-        return not_found(f"no ringer called {name!r}")
+    looked_up = stored_ringer(repository, name)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     repository.remove(stored.name)
     return succeeded(stored.name)
 
@@ -102,9 +105,10 @@ def everybody(repository: RingerRepository) -> Result[List[RingerView]]:
 
 def learnt(repository: RingerRepository, name: str, title: str) -> Result[RingerView]:
     """Move a method from what somebody is learning to what they can ring."""
-    stored = repository.find(name)
-    if stored is None:
-        return not_found(f"no ringer called {name!r}")
+    looked_up = stored_ringer(repository, name)
+    if not looked_up.ok:
+        return Result(failure=looked_up.failure)
+    stored = looked_up.unwrap()
     if not title.strip():
         return invalid("a method has to be named")
     try:
