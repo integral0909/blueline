@@ -75,14 +75,25 @@ class AnnualView:
     occasions_rung: Tuple[str, ...]
 
     @property
+    def performances(self) -> int:
+        """How many were rung in the year this report covers.
+
+        Not totals.performances, which is everything ever rung at the place.
+        The totals are here for the leaderboards, which a tower reads as all
+        time, and a year that quietly counted them would say a tower that has
+        not rung since 2019 had a busy 2023.
+        """
+        return self.peals + self.quarters + self.other
+
+    @property
     def quiet(self) -> bool:
-        return self.totals.performances == 0
+        return self.performances == 0
 
     def summary(self) -> str:
         if self.quiet:
             return f"{self.place}, {self.year}: nothing rung"
         return (
-            f"{self.place}, {self.year}: {self.totals.performances} performances, "
+            f"{self.place}, {self.year}: {self.performances} performances, "
             f"{self.peals} peals, {self.quarters} quarters"
         )
 

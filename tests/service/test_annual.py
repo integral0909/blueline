@@ -230,3 +230,24 @@ class TestRefusals:
     def test_a_report_about_nowhere(self, rung, ringers, competitions, collections, loaded) -> None:
         result = make(rung, ringers, competitions, collections, loaded, place="   ")
         assert result.failure.reason is Reason.INVALID
+
+
+class TestTheYearNotAllTime:
+    """The totals are all time, for the leaderboards. The year is the year."""
+
+    def test_a_tower_that_has_not_rung_this_year_is_quiet(
+        self, rung, ringers, competitions, collections, loaded
+    ) -> None:
+        view = make(rung, ringers, competitions, collections, loaded, year=2019).unwrap()
+        assert view.quiet
+
+    def test_even_though_it_has_rung_before(
+        self, rung, ringers, competitions, collections, loaded
+    ) -> None:
+        view = make(rung, ringers, competitions, collections, loaded, year=2019).unwrap()
+        assert view.totals.performances > 0
+
+    def test_the_count_is_the_years(self, rung, ringers, competitions, collections, loaded) -> None:
+        view = make(rung, ringers, competitions, collections, loaded).unwrap()
+        assert view.performances == 4
+        assert view.totals.performances == 5

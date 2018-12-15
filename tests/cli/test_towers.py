@@ -183,3 +183,34 @@ class TestPerformanceAtATower:
             ],
         )
         assert result.exit_code == 0
+
+
+class TestYear:
+    def test_it_reports_on_a_year(self, runner, seeded) -> None:
+        runner.invoke(
+            app,
+            [
+                "rang",
+                "Cambridge Surprise Major",
+                *sum((["-r", name] for name in ["A", "B", "C", "D", "E", "F", "G", "H"]), []),
+                "-s",
+                "8",
+                "-l",
+                "5024",
+                "--on",
+                "2023-04-09",
+                "-p",
+                "St Andrew",
+            ],
+        )
+        result = runner.invoke(app, ["year", "St Andrew", "2023"])
+        assert result.exit_code == 0
+        assert "peals" in result.stdout
+
+    def test_a_quiet_year(self, runner, seeded) -> None:
+        result = runner.invoke(app, ["year", "St Andrew", "2019"])
+        assert result.exit_code == 0
+        assert "nothing rung" in result.stdout
+
+    def test_a_year_before_anybody_rang(self, runner, seeded) -> None:
+        assert runner.invoke(app, ["year", "St Andrew", "1200"]).exit_code != 0
