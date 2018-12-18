@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Set
+from typing import List, Set
 
 from typer.testing import CliRunner
 
@@ -149,3 +149,43 @@ class TestStores:
         )
         assert result.ok
         assert result.unwrap().tower == "St Andrew, Marchgate"
+
+
+class TestFlatNamespace:
+    """Every command sits at the top level, so two groups can collide."""
+
+    def names(self) -> List[str]:
+        return [
+            command.name or command.callback.__name__.replace("_", "-")
+            for command in app.registered_commands
+        ]
+
+    def test_no_two_commands_share_a_name(self) -> None:
+        names = self.names()
+        doubled = {name for name in names if names.count(name) > 1}
+        assert not doubled, f"{sorted(doubled)} registered twice"
+
+    def test_every_command_has_a_name(self) -> None:
+        assert all(self.names())
+
+    def test_no_name_has_an_underscore_in_it(self) -> None:
+        # Typer would derive one from the function name. A command nobody can
+        # guess the spelling of is a command nobody runs.
+        assert not [name for name in self.names() if "_" in name]
+
+    def test_every_group_is_mounted(self) -> None:
+        from blueline.cli.main import GROUPS
+
+        registered = len(app.registered_commands)
+        assert registered == sum(len(group.registered_commands) for group in GROUPS)
+
+    def test_no_group_is_mounted_twice(self) -> None:
+        from blueline.cli.main import GROUPS
+
+        assert len({id(group) for group in GROUPS}) == len(GROUPS)
+
+    def test_the_transfer_commands_are_reachable(self) -> None:
+        assert {"import", "export", "seed"} <= set(self.names())
+
+    def test_the_method_commands_still_are(self) -> None:
+        assert {"show", "line", "falseness"} <= set(self.names())
