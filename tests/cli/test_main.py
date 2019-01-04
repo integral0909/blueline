@@ -625,3 +625,20 @@ class TestMusical:
 
     def test_a_method_nobody_has_stored(self, runner, seeded) -> None:
         assert runner.invoke(app, ["musical", "Weasel Major"]).exit_code != 0
+
+
+class TestCard:
+    def test_a_printed_calling_is_rung_through(self, runner, seeded) -> None:
+        result = runner.invoke(app, ["card", "Plain Bob Major", "W H"])
+        assert result.exit_code == 0
+        assert "W H" in result.stdout
+
+    def test_it_says_what_it_read(self, runner, seeded) -> None:
+        result = runner.invoke(app, ["card", "Plain Bob Major", "W H H"])
+        assert "W 2H" in result.stdout
+
+    def test_something_that_is_not_a_position(self, runner, seeded) -> None:
+        assert runner.invoke(app, ["card", "Plain Bob Major", "W ?? H"]).exit_code != 0
+
+    def test_a_method_nobody_has_stored(self, runner, seeded) -> None:
+        assert runner.invoke(app, ["card", "Weasel Major", "W H"]).exit_code != 0

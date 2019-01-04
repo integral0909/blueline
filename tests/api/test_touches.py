@@ -307,3 +307,34 @@ class TestMusical:
     def test_the_musical_route_is_not_read_as_a_bell(self, seeded):
         response = seeded.get("/methods/Plain Bob Minor/musical", params={"max_found": 10})
         assert response.status_code == 200
+
+
+class TestPrinted:
+    def test_a_printed_calling_is_rung_through(self, seeded):
+        response = seeded.post("/methods/Plain Bob Major/printed", json={"printed": "W H"})
+        assert response.status_code == 200
+        assert response.json()["touch"]["length"] > 0
+
+    def test_it_says_what_it_read(self, seeded):
+        body = seeded.post("/methods/Plain Bob Major/printed", json={"printed": "W H H"}).json()
+        assert body["tidied"] == "W 2H"
+
+    def test_the_positions_come_back(self, seeded):
+        body = seeded.post("/methods/Plain Bob Major/printed", json={"printed": "3H"}).json()
+        assert body["positions"] == ["Home", "Home", "Home"]
+
+    def test_parts_are_reported(self, seeded):
+        body = seeded.post("/methods/Plain Bob Major/printed", json={"printed": "W H x3"}).json()
+        assert body["parts"] == 3
+
+    def test_something_that_is_not_a_position(self, seeded):
+        response = seeded.post("/methods/Plain Bob Major/printed", json={"printed": "W ?? H"})
+        assert response.status_code == 422
+
+    def test_a_method_nobody_has_stored(self, seeded):
+        response = seeded.post("/methods/Weasel Major/printed", json={"printed": "W H"})
+        assert response.status_code == 404
+
+    def test_nothing_to_read(self, seeded):
+        response = seeded.post("/methods/Plain Bob Major/printed", json={"printed": " "})
+        assert response.status_code == 422
