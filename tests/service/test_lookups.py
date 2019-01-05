@@ -80,10 +80,10 @@ class TestOneSentence:
     message gets a different answer from two endpoints."""
 
     def test_every_missing_method_refuses_the_same_way(self, loaded) -> None:
-        from blueline.service import analysis, calls, proving, searching
+        from blueline.service import analysing, calls, proving, searching
 
         details = {
-            analysis.line(loaded, "Weasel Major", 1).failure.detail,
+            analysing.line(loaded, "Weasel Major", 1).failure.detail,
             calls.positions(loaded, "Weasel Major").failure.detail,
             proving.prove(loaded, "Weasel Major", "-").failure.detail,
             searching.search(loaded, "Weasel Major").failure.detail,

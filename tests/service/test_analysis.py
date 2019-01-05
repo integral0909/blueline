@@ -1,4 +1,4 @@
-from blueline.service import analysis as service
+from blueline.service import analysing as service
 from blueline.service.results import Reason
 
 
