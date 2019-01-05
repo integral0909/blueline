@@ -297,3 +297,37 @@ class TestSameCompositions:
     def test_a_method_that_is_not_there_is_a_404(self, seeded):
         response = seeded.get("/methods/Nowhere Surprise Major/same-compositions")
         assert response.status_code == 404
+
+
+class TestEverything:
+    def test_one_call_gets_the_lot(self, seeded):
+        response = seeded.get("/methods/Cambridge Surprise Minor/everything")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["method"]["lead_length"] == 24
+        assert body["line"]["grid"]
+        assert body["positions"]
+
+    def test_the_bell_can_be_chosen(self, seeded):
+        body = seeded.get("/methods/Cambridge Surprise Minor/everything", params={"bell": 3}).json()
+        assert body["line"]["bell"] == 3
+
+    def test_the_falseness_is_capped(self, seeded):
+        body = seeded.get(
+            "/methods/Cambridge Surprise Minor/everything", params={"falseness": 2}
+        ).json()
+        assert len(body["falseness"]) <= 2
+
+    def test_it_says_how_hard_it_is(self, seeded):
+        body = seeded.get("/methods/Cambridge Surprise Minor/everything").json()
+        assert body["difficulty"]["band"]
+
+    def test_a_bell_that_is_not_ringing(self, seeded):
+        response = seeded.get("/methods/Cambridge Surprise Minor/everything", params={"bell": 9})
+        assert response.status_code == 422
+
+    def test_a_method_nobody_has_stored(self, seeded):
+        assert seeded.get("/methods/Weasel Major/everything").status_code == 404
+
+    def test_the_everything_route_is_not_read_as_a_bell(self, seeded):
+        assert seeded.get("/methods/Cambridge Surprise Minor/everything").status_code == 200

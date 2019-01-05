@@ -642,3 +642,17 @@ class TestCard:
 
     def test_a_method_nobody_has_stored(self, runner, seeded) -> None:
         assert runner.invoke(app, ["card", "Weasel Major", "W H"]).exit_code != 0
+
+
+class TestEverything:
+    def test_one_command_shows_the_lot(self, runner, seeded) -> None:
+        result = runner.invoke(app, ["everything", "Cambridge Surprise Minor"])
+        assert result.exit_code == 0
+        assert "Cambridge" in result.stdout
+
+    def test_the_bell_can_be_chosen(self, runner, seeded) -> None:
+        result = runner.invoke(app, ["everything", "Cambridge Surprise Minor", "-b", "3"])
+        assert result.exit_code == 0
+
+    def test_a_method_nobody_has_stored(self, runner, seeded) -> None:
+        assert runner.invoke(app, ["everything", "Weasel Major"]).exit_code != 0
