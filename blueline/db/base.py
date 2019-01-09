@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from typing import Generic, Optional, Type, TypeVar
 
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from blueline.db.models import Base

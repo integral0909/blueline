@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from sqlalchemy import func
 
@@ -87,8 +87,11 @@ class MethodRepository(Repository[StoredMethod]):
         return self.search()
 
     def stages(self) -> List[int]:
-        statement = self.session.query(StoredMethod.stage).distinct().order_by(StoredMethod.stage)
-        return list(statement.all())
+        # A one column query gives back rows rather than values, so the
+        # stage has to be taken out of each of them.
+        statement = self.session.query(StoredMethod.stage).distinct()
+        ordered = statement.order_by(StoredMethod.stage)
+        return [row[0] for row in ordered.all()]
 
 
 class CompositionRepository(Repository[StoredComposition]):
@@ -124,5 +127,9 @@ class CompositionRepository(Repository[StoredComposition]):
         return list(statement.all())
 
     def longest(self, limit: int = 10) -> List[StoredComposition]:
-        statement = self.session.query(StoredComposition).order_by(StoredComposition.length.desc()).limit(limit)
+        statement = (
+            self.session.query(StoredComposition)
+            .order_by(StoredComposition.length.desc())
+            .limit(limit)
+        )
         return list(statement.all())

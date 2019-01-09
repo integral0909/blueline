@@ -9,7 +9,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 SCRIPT = ROOT / "scripts" / "check.sh"
-STEPS = ("format", "lint", "types", "tests")
+STEPS = ("lint", "types", "tests")
 
 
 @pytest.fixture(scope="module")
@@ -40,24 +40,32 @@ class TestWorkflow:
         assert in_workflow == sorted(in_workflow)
         assert in_script == sorted(in_script)
 
-    def test_it_uses_the_python_the_project_needs(self, workflow):
-        pyproject = (ROOT / "pyproject.toml").read_text()
-        assert 'requires-python = ">=3.11"' in pyproject
-        assert 'python-version: "3.11"' in workflow
+    def test_it_says_what_python_the_package_needs(self, workflow):
+        assert 'python_requires=">=3.7"' in (ROOT / "setup.py").read_text()
+
+    def test_it_runs_on_a_python_that_still_exists(self, workflow):
+        # 3.7 is what the source targets and what setup.py declares. No
+        # runner offers it any more, so the checks run on something current;
+        # nothing here uses syntax newer than 3.7 either way.
+        assert "python-version:" in workflow
 
     def test_it_installs_the_dev_extras(self, workflow):
         assert 'pip install -e ".[dev]"' in workflow
 
 
 class TestSameToolsBothSides:
-    @pytest.mark.parametrize("tool", ["black", "ruff", "mypy", "pytest"])
+    @pytest.mark.parametrize("tool", ["flake8", "mypy", "pytest"])
     def test_each_tool_runs_in_both_places(self, workflow, script, tool):
         assert tool in workflow
         assert f"$PY/{tool}" in script
 
-    @pytest.mark.parametrize("tool", ["black", "ruff", "mypy", "pytest"])
-    def test_each_tool_is_pinned(self, tool):
-        assert f'"{tool}==' in (ROOT / "pyproject.toml").read_text()
+    @pytest.mark.parametrize("tool", ["flake8", "mypy", "pytest"])
+    def test_each_tool_is_a_dev_extra(self, tool):
+        assert f'"{tool}"' in (ROOT / "setup.py").read_text()
 
-    def test_the_workflow_checks_formatting_rather_than_changing_it(self, workflow):
-        assert "black --check" in workflow
+    def test_the_runtime_dependencies_are_pinned(self):
+        # The library this is built on is pinned exactly; the test tooling
+        # deliberately is not, because it has to keep working.
+        setup = (ROOT / "setup.py").read_text()
+        for pin in ("SQLAlchemy==", "alembic==", "click==", "structlog==", "toml=="):
+            assert pin in setup

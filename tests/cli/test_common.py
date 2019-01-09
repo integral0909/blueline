@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import pytest
-import typer
 
+from blueline.cli.declare import Exit
 from blueline.cli.commands.common import EXIT_FOR, changing, show, stores, unwrap
 from blueline.service.results import Reason, invalid, not_found, succeeded
 
@@ -24,14 +24,14 @@ class TestUnwrap:
         assert all(code > 0 for code in EXIT_FOR.values())
 
     def test_a_refusal_exits_with_the_matching_code(self) -> None:
-        with pytest.raises(typer.Exit) as caught:
+        with pytest.raises(Exit) as caught:
             unwrap(not_found("gone"))
-        assert caught.value.exit_code == EXIT_FOR[Reason.NOT_FOUND]
+        assert caught.value.code == EXIT_FOR[Reason.NOT_FOUND]
 
     def test_something_that_does_not_make_sense(self) -> None:
-        with pytest.raises(typer.Exit) as caught:
+        with pytest.raises(Exit) as caught:
             unwrap(invalid("no"))
-        assert caught.value.exit_code == EXIT_FOR[Reason.INVALID]
+        assert caught.value.code == EXIT_FOR[Reason.INVALID]
 
 
 class TestStores:
@@ -72,7 +72,7 @@ class TestChanging:
     def test_a_refusal_rolls_back_too(self, library) -> None:
         from blueline.core.towers import Tower, weight_from_pounds
 
-        with pytest.raises(typer.Exit), changing() as store:
+        with pytest.raises(Exit), changing() as store:
             store.towers.add(Tower(place="St Andrew", bells=8, tenor=weight_from_pounds(2604)))
             unwrap(invalid("no"))
         assert stores().towers.count() == 0

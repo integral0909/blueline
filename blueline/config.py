@@ -119,7 +119,9 @@ def from_file(path: Optional[Path] = None) -> Settings:
 
     try:
         document = toml.loads(where.read_text())
-    except (toml.TomlDecodeError, OSError) as error:
+    # ValueError as well: this version raises a bare one for some
+    # kinds of malformed input rather than its own error.
+    except (toml.TomlDecodeError, ValueError, OSError) as error:
         raise ConfigError(f"{where}: {error}") from error
 
     table = document.get(TABLE, document)

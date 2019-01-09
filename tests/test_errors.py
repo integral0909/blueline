@@ -75,7 +75,8 @@ class TestCatchingTheLot:
 
         engine = make_engine(MEMORY_URL)
         create_all(engine)
-        with session_factory(engine)() as session, pytest.raises(BluelineError):
+        session = session_factory(engine)()
+        with pytest.raises(BluelineError):
             MethodRepository(session).get("Nowhere Surprise Major")
 
     def test_the_particular_type_still_comes_through(self):

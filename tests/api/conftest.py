@@ -1,5 +1,5 @@
 import pytest
-from fastapi.testclient import TestClient
+from blueline.api.testing import Client
 
 from blueline.api import deps
 from blueline.api.app import create_app
@@ -11,9 +11,7 @@ from blueline.db.session import MEMORY_URL, create_all, drop_all, make_engine, s
 def client():
     """A client on an application pointed at a fresh in memory database."""
     deps.reset()
-    app = create_app(Settings(database_url=MEMORY_URL))
-    with TestClient(app) as opened:
-        yield opened
+    yield Client(create_app(Settings(database_url=MEMORY_URL)))
     deps.reset()
 
 
@@ -21,9 +19,7 @@ def client():
 def seeded():
     """The same client, with the standard methods already stored."""
     deps.reset()
-    app = create_app(Settings(database_url=MEMORY_URL, seed_on_start=True))
-    with TestClient(app) as opened:
-        yield opened
+    yield Client(create_app(Settings(database_url=MEMORY_URL, seed_on_start=True)))
     deps.reset()
 
 
@@ -37,6 +33,9 @@ def session():
     engine = make_engine(MEMORY_URL)
     create_all(engine)
     factory = session_factory(engine)
-    with factory() as opened:
+    opened = factory()
+    try:
         yield opened
+    finally:
+        opened.close()
     drop_all(engine)

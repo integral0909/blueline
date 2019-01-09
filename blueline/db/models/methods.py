@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-
-from datetime import datetime
-
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 
 from blueline.db.models.base import Base, now
@@ -27,9 +32,12 @@ class StoredMethod(Base):
     created_at = Column(DateTime(timezone=True), default=now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=now, onupdate=now, nullable=False)
 
-    compositions = relationship("StoredComposition", back_populates="method",
+    compositions = relationship(
+        "StoredComposition",
+        back_populates="method",
         cascade="all, delete-orphan",
-        passive_deletes=False,)
+        passive_deletes=False,
+    )
 
     def __repr__(self) -> str:
         return f"StoredMethod({self.title!r})"

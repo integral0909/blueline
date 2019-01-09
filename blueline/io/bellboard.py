@@ -117,7 +117,7 @@ def read(text: str, stage: int) -> Performance:
 
     composer: Optional[str] = None
     if rest and rest[0].lower().startswith("composed by"):
-        composer = rest[0][len("composed by") :].strip() or None
+        composer = rest[0][len("composed by"):].strip() or None
         rest = rest[1:]
 
     length, title = _length_and_title(what)

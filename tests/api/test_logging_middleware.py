@@ -87,13 +87,10 @@ class TestLogging:
 
 class TestIdHelper:
     def test_it_takes_what_the_caller_gave(self):
-        class Fake:
-            headers = {REQUEST_ID_HEADER: "supplied"}
-
-        assert request_id_of(Fake()) == "supplied"
+        assert request_id_of({"HTTP_X_REQUEST_ID": "supplied"}) == "supplied"
 
     def test_it_invents_one_where_there_is_none(self):
         class Fake:
             headers: Dict[str, str] = {}
 
-        assert len(request_id_of(Fake())) == 32
+        assert len(request_id_of({})) == 32

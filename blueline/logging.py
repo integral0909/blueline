@@ -14,12 +14,23 @@ from __future__ import annotations
 
 import logging
 import sys
+import threading
 from typing import Any, List, TextIO, cast
 
 import structlog
 
 DEV = "dev"
 JSON = "json"
+
+
+class _Context(threading.local):
+    """Whatever has been bound for the request this thread is serving."""
+
+    def __init__(self) -> None:
+        self.fields: dict = {}
+
+
+_CONTEXT = _Context()
 
 
 class _CurrentStderr:
@@ -48,12 +59,37 @@ STDERR = _CurrentStderr()
 def _shared_processors() -> List[Any]:
     """The processors both shapes want, in the order they have to run."""
     return [
-        structlog.contextvars.merge_contextvars,
+        merge_context,
         structlog.stdlib.add_log_level,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
         structlog.processors.StackInfoRenderer(),
         structlog.processors.UnicodeDecoder(),
     ]
+
+
+def _at_least(level: int) -> Any:
+    """Drop anything logged below the level that was asked for.
+
+    structlog's own filter wants a standard library logger underneath it to
+    ask isEnabledFor, and we print straight to stderr. The method name is on
+    every event anyway, so the comparison is a lookup.
+    """
+    names = {
+        "debug": logging.DEBUG,
+        "info": logging.INFO,
+        "warning": logging.WARNING,
+        "warn": logging.WARNING,
+        "error": logging.ERROR,
+        "exception": logging.ERROR,
+        "critical": logging.CRITICAL,
+    }
+
+    def keep(_logger: Any, method_name: str, event: Any) -> Any:
+        if names.get(method_name, logging.INFO) < level:
+            raise structlog.DropEvent
+        return event
+
+    return keep
 
 
 def _is_a_terminal() -> bool:
@@ -72,8 +108,13 @@ def configure(shape: str = JSON, level: int = logging.INFO) -> None:
         renderer = structlog.processors.JSONRenderer(sort_keys=True)
 
     structlog.configure(
-        processors=[*_shared_processors(), structlog.processors.format_exc_info, renderer],
-        wrapper_class=structlog.make_filtering_bound_logger(level),
+        processors=[
+            _at_least(level),
+            *_shared_processors(),
+            structlog.processors.format_exc_info,
+            renderer,
+        ],
+        wrapper_class=structlog.BoundLogger,
         # PrintLoggerFactory is annotated as wanting a TextIO. It only ever
         # calls write and flush, which is all the stand in offers.
         logger_factory=structlog.PrintLoggerFactory(file=cast(TextIO, STDERR)),
@@ -92,17 +133,31 @@ def get_logger(name: str) -> Any:
 
 
 def bind(**fields: Any) -> None:
-    """Attach fields to everything logged from here on in this context.
+    """Attach fields to everything logged from here on in this thread.
 
     Used for a request id, so every line a request produces can be found
     without threading the id through every call.
     """
-    structlog.contextvars.bind_contextvars(**fields)
+    _CONTEXT.fields.update(fields)
 
 
 def unbind(*names: str) -> None:
-    structlog.contextvars.unbind_contextvars(*names)
+    for name in names:
+        _CONTEXT.fields.pop(name, None)
 
 
 def clear() -> None:
-    structlog.contextvars.clear_contextvars()
+    _CONTEXT.fields.clear()
+
+
+def merge_context(_logger: Any, _name: str, event: Any) -> Any:
+    """Put the bound fields on the event as it goes past.
+
+    A processor rather than anything structlog provides. Its own context
+    handling is thread local in this version and a per-request id wants to be
+    cleared explicitly at the end of the request, which is easier to reason
+    about when the dictionary is in plain sight.
+    """
+    for key, value in _CONTEXT.fields.items():
+        event.setdefault(key, value)
+    return event

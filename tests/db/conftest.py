@@ -15,8 +15,11 @@ def session():
     engine = make_engine(MEMORY_URL)
     create_all(engine)
     factory = session_factory(engine)
-    with factory() as opened:
+    opened = factory()
+    try:
         yield opened
+    finally:
+        opened.close()
     drop_all(engine)
 
 

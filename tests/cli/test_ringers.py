@@ -18,11 +18,11 @@ class TestAdding:
     def test_somebody_can_be_added(self, runner, library):
         result = runner.invoke(app, ["ringer", "Ann", "-r", CAMBRIDGE])
         assert result.exit_code == 0
-        assert "1 methods" in result.stdout
+        assert "1 methods" in result.output
 
     def test_it_mentions_what_they_are_learning(self, runner, library):
         result = runner.invoke(app, ["ringer", "Gus", "-l", CAMBRIDGE])
-        assert "learning" in result.stdout
+        assert "learning" in result.output
 
     def test_the_same_name_twice_exits_with_the_conflict_code(self, runner, library):
         runner.invoke(app, ["ringer", "Ann"])
@@ -36,15 +36,15 @@ class TestAdding:
 
 class TestListing:
     def test_an_empty_tower_lists_nobody(self, runner, library):
-        assert "0 ringers" in runner.invoke(app, ["ringers"]).stdout
+        assert "0 ringers" in runner.invoke(app, ["ringers"]).output
 
     def test_it_lists_everybody(self, runner, library):
         a_band(runner)
-        assert "8 ringers" in runner.invoke(app, ["ringers"]).stdout
+        assert "8 ringers" in runner.invoke(app, ["ringers"]).output
 
     def test_it_shows_what_they_are_learning(self, runner, library):
         a_band(runner)
-        assert "Cambridge" in runner.invoke(app, ["ringers"]).stdout
+        assert "Cambridge" in runner.invoke(app, ["ringers"]).output
 
 
 class TestLearnt:
@@ -52,12 +52,12 @@ class TestLearnt:
         a_band(runner)
         result = runner.invoke(app, ["learnt", "Gus", CAMBRIDGE])
         assert result.exit_code == 0
-        assert "2 methods" in result.stdout
+        assert "2 methods" in result.output
 
     def test_it_is_saved(self, runner, library):
         a_band(runner)
         runner.invoke(app, ["learnt", "Gus", CAMBRIDGE])
-        assert "Gus" in runner.invoke(app, ["who-rings", CAMBRIDGE]).stdout
+        assert "Gus" in runner.invoke(app, ["who-rings", CAMBRIDGE]).output
 
     def test_somebody_who_is_not_there_exits_not_found(self, runner, library):
         result = runner.invoke(app, ["learnt", "Nobody", CAMBRIDGE])
@@ -69,12 +69,12 @@ class TestRemoving:
         a_band(runner)
         result = runner.invoke(app, ["unringer", "Hana"])
         assert result.exit_code == 0
-        assert "removed Hana" in result.stdout
+        assert "removed Hana" in result.output
 
     def test_they_are_gone_afterwards(self, runner, library):
         a_band(runner)
         runner.invoke(app, ["unringer", "Hana"])
-        assert "7 ringers" in runner.invoke(app, ["ringers"]).stdout
+        assert "7 ringers" in runner.invoke(app, ["ringers"]).output
 
     def test_removing_somebody_who_is_not_there_exits_not_found(self, runner, library):
         result = runner.invoke(app, ["unringer", "Nobody"])
@@ -85,37 +85,37 @@ class TestWhoRings:
     def test_it_lists_who_can(self, runner, library):
         a_band(runner)
         result = runner.invoke(app, ["who-rings", CAMBRIDGE])
-        assert "Ann" in result.stdout
-        assert "Gus" not in result.stdout
+        assert "Ann" in result.output
+        assert "Gus" not in result.output
 
     def test_a_method_nobody_rings_lists_nobody(self, runner, library):
         a_band(runner)
         result = runner.invoke(app, ["who-rings", YORKSHIRE])
-        assert result.stdout.strip() == ""
+        assert result.output.strip() == ""
 
 
 class TestLearning:
     def test_it_groups_by_method(self, runner, library):
         a_band(runner)
         result = runner.invoke(app, ["learning"])
-        assert f"{CAMBRIDGE}: Gus" in result.stdout
+        assert f"{CAMBRIDGE}: Gus" in result.output
 
     def test_a_tower_learning_nothing_has_nothing(self, runner, library):
         runner.invoke(app, ["ringer", "Ann", "-r", PLAIN])
-        assert runner.invoke(app, ["learning"]).stdout.strip() == ""
+        assert runner.invoke(app, ["learning"]).output.strip() == ""
 
 
 class TestBandCanRing:
     def test_it_says_what_they_can_get_through(self, runner, seeded):
         a_band(runner)
         result = runner.invoke(app, ["band-can-ring", "8"])
-        assert PLAIN in result.stdout
-        assert CAMBRIDGE not in result.stdout
+        assert PLAIN in result.output
+        assert CAMBRIDGE not in result.output
 
     def test_once_the_learner_has_it_they_can(self, runner, seeded):
         a_band(runner)
         runner.invoke(app, ["learnt", "Gus", CAMBRIDGE])
-        assert CAMBRIDGE in runner.invoke(app, ["band-can-ring", "8"]).stdout
+        assert CAMBRIDGE in runner.invoke(app, ["band-can-ring", "8"]).output
 
     def test_a_band_too_small_exits_invalid(self, runner, seeded):
         runner.invoke(app, ["ringer", "Ann"])

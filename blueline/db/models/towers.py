@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
-from datetime import date, datetime
-
-from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 
 from blueline.db.models.base import Base, now
-from blueline.db.models.methods import StoredMethod
 
 
 class StoredTower(Base):
@@ -47,10 +52,10 @@ class StoredPerformance(Base):
     __tablename__ = "performances"
 
     id = Column(Integer, primary_key=True)
-    method_id: Mapped[Optional[int]] = mapped_column(
+    method_id = Column(
         ForeignKey("methods.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    tower_id: Mapped[Optional[int]] = mapped_column(
+    tower_id = Column(
         ForeignKey("towers.id", ondelete="SET NULL"), nullable=True, index=True
     )
     title = Column(String(120), index=True, nullable=False)

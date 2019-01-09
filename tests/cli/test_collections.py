@@ -19,7 +19,7 @@ class TestSet:
     def test_a_set_can_be_written_down(self, runner, seeded) -> None:
         result = runner.invoke(app, ["set", "Tuesday", *MINOR])
         assert result.exit_code == 0
-        assert "Tuesday" in result.stdout
+        assert "Tuesday" in result.output
 
     def test_the_same_name_twice(self, kept) -> None:
         assert kept.invoke(app, ["set", "Tuesday", *MINOR]).exit_code != 0
@@ -27,16 +27,16 @@ class TestSet:
 
 class TestSets:
     def test_it_lists_the_named_ones_too(self, runner, seeded) -> None:
-        assert "3 sets" in runner.invoke(app, ["sets"]).stdout
+        assert "3 sets" in runner.invoke(app, ["sets"]).output
 
     def test_they_can_be_left_out(self, kept) -> None:
-        assert "1 sets" in kept.invoke(app, ["sets", "--mine"]).stdout
+        assert "1 sets" in kept.invoke(app, ["sets", "--mine"]).output
 
 
 class TestShow:
     def test_it_shows_what_is_in_one(self, kept) -> None:
         result = kept.invoke(app, ["show-set", "Tuesday"])
-        assert "Cambridge Surprise Minor" in result.stdout
+        assert "Cambridge Surprise Minor" in result.output
 
     def test_a_named_set_needs_no_storing(self, runner, seeded) -> None:
         result = runner.invoke(app, ["show-set", "the standard eight"])
@@ -50,7 +50,7 @@ class TestChanging:
     def test_a_method_can_be_added(self, kept) -> None:
         result = kept.invoke(app, ["set-add", "Tuesday", "Grandsire Doubles"])
         assert result.exit_code == 0
-        assert "Grandsire Doubles" in result.stdout
+        assert "Grandsire Doubles" in result.output
 
     def test_a_method_can_be_taken_out(self, kept) -> None:
         result = kept.invoke(app, ["set-drop", "Tuesday", "Plain Bob Minor"])
@@ -58,7 +58,7 @@ class TestChanging:
 
     def test_one_can_be_forgotten(self, kept) -> None:
         assert kept.invoke(app, ["forget-set", "Tuesday"]).exit_code == 0
-        assert "0 sets" in kept.invoke(app, ["sets", "--mine"]).stdout
+        assert "0 sets" in kept.invoke(app, ["sets", "--mine"]).output
 
     def test_forgetting_one_that_is_not_there(self, kept) -> None:
         assert kept.invoke(app, ["forget-set", "Nothing"]).exit_code != 0
@@ -69,12 +69,12 @@ class TestCovers:
         kept.invoke(app, ["ringer", "Ann", "-r", "Plain Bob Minor"])
         result = kept.invoke(app, ["covers", "Tuesday"])
         assert result.exit_code == 0
-        assert "1 of 2" in result.stdout
+        assert "1 of 2" in result.output
 
     def test_what_one_ringer_covers(self, kept) -> None:
         kept.invoke(app, ["ringer", "Ann", "-r", "Plain Bob Minor"])
         result = kept.invoke(app, ["covers", "Tuesday", "-w", "Ann"])
-        assert "50%" in result.stdout
+        assert "50%" in result.output
 
     def test_a_ringer_nobody_has_heard_of(self, kept) -> None:
         assert kept.invoke(app, ["covers", "Tuesday", "-w", "Nobody"]).exit_code != 0

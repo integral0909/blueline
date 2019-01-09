@@ -18,11 +18,11 @@ class TestCalls:
     def test_a_calling_is_rung_through(self, runner) -> None:
         result = runner.invoke(app, ["calls", "2 to 3; 4 to 5", "8"])
         assert result.exit_code == 0
-        assert "2 calls" in result.stdout
+        assert "2 calls" in result.output
 
     def test_the_rows_can_be_shown(self, runner) -> None:
         result = runner.invoke(app, ["calls", "2 to 3", "8", "--rows"])
-        assert "12345678" in result.stdout
+        assert "12345678" in result.output
 
     def test_a_start_can_be_given(self, runner) -> None:
         result = runner.invoke(app, ["calls", "2 to 3", "8", "--from", "13245678"])
@@ -41,7 +41,7 @@ class TestCallsFile:
     def test_a_written_calling(self, runner, calling) -> None:
         result = runner.invoke(app, ["calls-file", str(calling), "8"])
         assert result.exit_code == 0
-        assert "2 calls" in result.stdout
+        assert "2 calls" in result.output
 
     def test_a_missing_file(self, runner, tmp_path) -> None:
         result = runner.invoke(app, ["calls-file", str(tmp_path / "gone.txt"), "8"])
@@ -52,15 +52,15 @@ class TestRoute:
     def test_getting_to_queens(self, runner) -> None:
         result = runner.invoke(app, ["route", "queens", "8"])
         assert result.exit_code == 0
-        assert "13572468" in result.stdout
+        assert "13572468" in result.output
 
     def test_the_calls_are_listed(self, runner) -> None:
         result = runner.invoke(app, ["route", "queens", "8"])
-        assert result.stdout.count(" to ") >= 6
+        assert result.output.count(" to ") >= 6
 
     def test_devon_says_them_the_other_way(self, runner) -> None:
-        down = runner.invoke(app, ["route", "queens", "8"]).stdout
-        up = runner.invoke(app, ["route", "queens", "8", "--style", "up"]).stdout
+        down = runner.invoke(app, ["route", "queens", "8"]).output
+        up = runner.invoke(app, ["route", "queens", "8", "--style", "up"]).output
         assert down != up
 
     def test_somewhere_nobody_rings(self, runner) -> None:

@@ -23,7 +23,12 @@ ROUTERS = {
 
 
 def paths(router) -> Set[str]:
-    return {route.path for route in router.routes}
+    return set(router.paths())
+
+
+def paths_served() -> Set[str]:
+    """Every path the application actually mounts."""
+    return {path for router in MOUNTED for path in router.paths()}
 
 
 class TestSplit:
@@ -51,7 +56,7 @@ class TestSplit:
     def test_nothing_that_writes_is_in_the_analysis_router(self):
         writes = {"POST", "PUT", "PATCH", "DELETE"}
         for route in analysis_router.routes:
-            assert not (route.methods & writes - {"POST"}) or route.path == "/analyse"
+            assert route.method not in (writes - {"POST"}) or route.path == "/analyse"
 
     def test_the_touch_endpoints_are_together(self):
         assert "/methods/{title}/prove" in paths(touches_router)
@@ -59,7 +64,7 @@ class TestSplit:
 
     def test_every_router_is_tagged(self):
         for router in ROUTERS.values():
-            assert router.tags
+            assert router.tag
 
 
 class TestMountingOrder:
@@ -76,14 +81,19 @@ class TestMountingOrder:
 
 class TestMounted:
     def test_every_route_reaches_the_application(self, client):
-        served = {route.path for route in client.app.routes}
+        served = set(paths_served())
         for router in ROUTERS.values():
             assert paths(router) <= served
 
-    def test_they_are_all_in_the_schema(self, client):
-        schema = set(client.get("/openapi.json").json()["paths"])
-        for router in ROUTERS.values():
-            assert paths(router) <= schema
+    def test_every_mounted_path_answers_something(self, client):
+        # Not a 404 for the path itself. What comes back may well be a
+        # refusal, but "nothing is served there" would mean it never got
+        # mounted.
+        for path in sorted(paths_served()):
+            if "{" in path:
+                continue
+            reply = client.get(path)
+            assert reply.status_code != 404 or "not served" not in reply.text
 
 
 class TestCommon:
@@ -101,12 +111,12 @@ class TestCommon:
         assert unwrap(succeeded(7)) == 7
 
     def test_unwrapping_a_failure_raises_the_right_status(self):
-        from fastapi import HTTPException
+        from blueline.api.wsgi import HttpError
 
-        with pytest.raises(HTTPException) as caught:
+        with pytest.raises(HttpError) as caught:
             unwrap(not_found("gone"))
-        assert caught.value.status_code == 404
+        assert caught.value.status == 404
 
-    def test_the_body_carries_the_reason_and_the_detail(self):
+    def test_the_refusal_carries_the_reason_and_the_detail(self):
         error = refuse(Failure(Reason.INVALID, "bad notation"))
-        assert error.detail == {"reason": "invalid", "detail": "bad notation"}
+        assert (error.reason, error.detail) == ("invalid", "bad notation")

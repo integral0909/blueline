@@ -9,7 +9,7 @@ class TestOnTheCommandLine:
     def test_a_clean_library_exits_zero(self, runner, seeded) -> None:
         result = runner.invoke(app, ["check"])
         assert result.exit_code == 0
-        assert "nothing to report" in result.stdout
+        assert "nothing to report" in result.output
 
     def test_notes_alone_are_not_a_failure(self, runner, seeded) -> None:
         runner.invoke(app, ["set", "Empty"])

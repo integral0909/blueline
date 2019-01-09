@@ -12,10 +12,10 @@ class TestOnTheCommandLine:
     def test_two_methods_can_be_compared(self, runner, seeded) -> None:
         result = runner.invoke(app, ["against", CAMBRIDGE, YORKSHIRE])
         assert result.exit_code == 0
-        assert "agree on" in result.stdout
+        assert "agree on" in result.output
 
     def test_it_says_the_share(self, runner, seeded) -> None:
-        assert "%" in runner.invoke(app, ["against", CAMBRIDGE, YORKSHIRE]).stdout
+        assert "%" in runner.invoke(app, ["against", CAMBRIDGE, YORKSHIRE]).output
 
     def test_the_nearest(self, runner, seeded) -> None:
         result = runner.invoke(app, ["like", CAMBRIDGE])

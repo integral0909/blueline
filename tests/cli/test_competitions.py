@@ -65,12 +65,12 @@ class TestRecording:
     def test_a_sheet_can_be_written_up(self, runner, library, sheet) -> None:
         result = runner.invoke(app, ["competition", str(sheet), "District", "2023-05-06", "6"])
         assert result.exit_code == 0
-        assert "St Mary" in result.stdout
+        assert "St Mary" in result.output
 
     def test_it_is_stored(self, runner, library, sheet) -> None:
         runner.invoke(app, ["competition", str(sheet), "District", "2023-05-06", "6"])
         result = runner.invoke(app, ["competitions"])
-        assert "1 competitions" in result.stdout
+        assert "1 competitions" in result.output
 
     def test_the_same_one_twice_is_refused(self, runner, library, sheet) -> None:
         runner.invoke(app, ["competition", str(sheet), "District", "2023-05-06", "6"])
@@ -89,11 +89,11 @@ class TestJudging:
     def test_a_recording_is_marked_and_stored(self, runner, library, recording) -> None:
         result = runner.invoke(app, ["judged", str(recording), "District", "2023-05-06", "6"])
         assert result.exit_code == 0
-        assert "St Mary" in result.stdout
+        assert "St Mary" in result.output
 
     def test_it_shows_up_in_the_listing(self, runner, library, recording) -> None:
         runner.invoke(app, ["judged", str(recording), "District", "2023-05-06", "6"])
-        assert "1 competitions" in runner.invoke(app, ["competitions"]).stdout
+        assert "1 competitions" in runner.invoke(app, ["competitions"]).output
 
 
 class TestListing:
@@ -102,15 +102,15 @@ class TestListing:
         runner.invoke(app, ["competition", str(sheet), "District", "2023-05-06", "6"])
 
     def test_nothing_stored(self, runner, library) -> None:
-        assert "0 competitions" in runner.invoke(app, ["competitions"]).stdout
+        assert "0 competitions" in runner.invoke(app, ["competitions"]).output
 
     def test_by_name(self, runner, library, sheet) -> None:
         self.load(runner, sheet)
-        assert "2 competitions" in runner.invoke(app, ["competitions", "-n", "Dist"]).stdout
+        assert "2 competitions" in runner.invoke(app, ["competitions", "-n", "Dist"]).output
 
     def test_by_band(self, runner, library, sheet) -> None:
         self.load(runner, sheet)
-        assert "2 competitions" in runner.invoke(app, ["competitions", "-b", "St Mary"]).stdout
+        assert "2 competitions" in runner.invoke(app, ["competitions", "-b", "St Mary"]).output
 
 
 class TestBand:
@@ -118,9 +118,9 @@ class TestBand:
         runner.invoke(app, ["competition", str(sheet), "District", "2022-05-07", "6"])
         runner.invoke(app, ["competition", str(sheet), "District", "2023-05-06", "6"])
         result = runner.invoke(app, ["band", "St Mary"])
-        assert "St Mary" in result.stdout
+        assert "St Mary" in result.output
 
     def test_a_band_nobody_has_seen(self, runner, library) -> None:
         result = runner.invoke(app, ["band", "St Swithin"])
         assert result.exit_code == 0
-        assert "too few to say" in result.stdout
+        assert "too few to say" in result.output

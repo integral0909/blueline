@@ -69,7 +69,10 @@ def check_database(session: Session, slow: float = SLOW) -> Check:
     """Ask the database something it can only answer if it is really there."""
     started = time.monotonic()
     try:
-        session.execute(text("select count(*) from methods")).scalar_one()
+        # scalar() rather than scalar_one(): the latter arrived in 1.4.
+        # Reading the value also closes the cursor, which matters here -
+        # a result left open holds a lock on the table.
+        session.execute(text("select count(*) from methods")).scalar()
     except SQLAlchemyError as error:
         # The driver's message carries the connection string on some backends,
         # so only the first line goes out. A readiness probe is public.

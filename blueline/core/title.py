@@ -87,7 +87,7 @@ def _take_class(words: List[str]) -> Tuple[Optional[str], List[str]]:
     lowered = [word.lower() for word in words]
     for phrase in CLASS_WORDS:
         parts = phrase.lower().split()
-        if len(words) >= len(parts) and lowered[-len(parts) :] == parts:
+        if len(words) >= len(parts) and lowered[-len(parts):] == parts:
             return phrase, words[: -len(parts)]
     return None, words
 

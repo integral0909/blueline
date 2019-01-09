@@ -18,7 +18,7 @@ from blueline.api.routers import ROUTERS as MOUNTED
 # Every router, keyed by its tag so a failure names the subject rather than a
 # number. Built from what is actually mounted, because the list this replaced
 # had gone out of date twice and a router nobody added here was never checked.
-ROUTERS = {(router.tags[0] if router.tags else "untagged"): router for router in MOUNTED}
+ROUTERS = {(router.tag or "untagged"): router for router in MOUNTED}
 
 PARAMETER = re.compile(r"\{[^}]+\}")
 

@@ -1,5 +1,5 @@
 import pytest
-from typer.testing import CliRunner
+from click.testing import CliRunner
 
 from blueline.api import deps
 from blueline.config import Settings

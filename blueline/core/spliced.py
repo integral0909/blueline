@@ -112,7 +112,7 @@ def spliceable(methods: List[Method]) -> List[Tuple[str, str]]:
     """Every pair that will not splice, so a band knows before they try."""
     bad: List[Tuple[str, str]] = []
     for index, first in enumerate(methods):
-        for second in methods[index + 1 :]:
+        for second in methods[index + 1:]:
             if not lead_heads_agree(first, second):
                 bad.append((first.name, second.name))
     return bad

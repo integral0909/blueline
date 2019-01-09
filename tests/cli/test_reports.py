@@ -36,10 +36,10 @@ class TestReport:
     def test_it_writes_one_up(self, recorded) -> None:
         result = recorded.invoke(app, ["report", "1"])
         assert result.exit_code == 0
-        assert "St Andrew, Marchgate" in result.stdout
+        assert "St Andrew, Marchgate" in result.output
 
     def test_the_conductor_is_marked(self, recorded) -> None:
-        assert "Hana (C)" in recorded.invoke(app, ["report", "1"]).stdout
+        assert "Hana (C)" in recorded.invoke(app, ["report", "1"]).output
 
     def test_one_that_is_not_there(self, recorded) -> None:
         assert recorded.invoke(app, ["report", "404"]).exit_code != 0
@@ -47,7 +47,7 @@ class TestReport:
 
 class TestPaste:
     def test_a_report_can_be_filed(self, recorded, tmp_path) -> None:
-        text = recorded.invoke(app, ["report", "1"]).stdout
+        text = recorded.invoke(app, ["report", "1"]).output
         path = tmp_path / "report.txt"
         path.write_text(text)
         result = recorded.invoke(app, ["paste", str(path), "8"])

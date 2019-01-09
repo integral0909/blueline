@@ -9,7 +9,6 @@ import inspect
 import pytest
 
 from blueline.api import stores
-from blueline.api.deps import get_session
 from blueline.db.repositories import (
     CollectionRepository,
     CompetitionRepository,
@@ -32,13 +31,22 @@ EXPECTED = {
 
 
 def dependencies() -> Dict[str, object]:
+    """The repository builders, which is everything but session_of."""
     return {
         name: value
         for name, value in vars(stores).items()
         if inspect.isfunction(value)
         and not name.startswith("_")
+        and name != "session_of"
         and value.__module__ == stores.__name__
     }
+
+
+class Asking:
+    """Something shaped like a request, carrying a session."""
+
+    def __init__(self, session) -> None:
+        self.state = {"session": session}
 
 
 class TestDependencies:
@@ -47,15 +55,17 @@ class TestDependencies:
 
     @pytest.mark.parametrize("name", sorted(EXPECTED))
     def test_each_gives_back_what_it_says(self, name, session) -> None:
-        assert isinstance(dependencies()[name](session), EXPECTED[name])
+        assert isinstance(dependencies()[name](Asking(session)), EXPECTED[name])
 
     @pytest.mark.parametrize("name", sorted(EXPECTED))
-    def test_each_takes_the_session_from_the_same_place(self, name) -> None:
-        default = inspect.signature(dependencies()[name]).parameters["session"].default
-        assert default.dependency is get_session
+    def test_each_reads_the_session_off_the_request(self, name, session) -> None:
+        # All of them go through session_of, so a handler cannot end up with
+        # two repositories looking at different transactions.
+        assert dependencies()[name](Asking(session)).session is session
 
     def test_they_all_use_the_session_they_are_given(self, session) -> None:
-        built = [make(session) for make in dependencies().values()]
+        asking = Asking(session)
+        built = [make(asking) for make in dependencies().values()]
         assert all(each.session is session for each in built)
 
 

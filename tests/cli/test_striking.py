@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import List
 
 import pytest
-from typer.testing import CliRunner
+from click.testing import CliRunner
 
 from blueline.cli.commands.striking import read_attempts, read_times
 from blueline.cli.main import app
@@ -75,15 +75,15 @@ class TestStrike:
     def test_it_judges_a_file(self, attempt) -> None:
         result = runner.invoke(app, ["strike", str(attempt), "6"])
         assert result.exit_code == 0
-        assert "0" in result.stdout
+        assert "0" in result.output
 
     def test_the_band_is_the_filename_by_default(self, attempt) -> None:
         result = runner.invoke(app, ["strike", str(attempt), "6"])
-        assert "st-mary" in result.stdout
+        assert "st-mary" in result.output
 
     def test_the_band_can_be_named(self, attempt) -> None:
         result = runner.invoke(app, ["strike", str(attempt), "6", "--band", "Ancient"])
-        assert "Ancient" in result.stdout
+        assert "Ancient" in result.output
 
     def test_a_missing_file(self, tmp_path) -> None:
         result = runner.invoke(app, ["strike", str(tmp_path / "gone.txt"), "6"])
@@ -109,11 +109,11 @@ class TestCompete:
     def test_it_judges_the_lot(self, competition) -> None:
         result = runner.invoke(app, ["compete", str(competition), "6"])
         assert result.exit_code == 0
-        assert "2 bands" in result.stdout
+        assert "2 bands" in result.output
 
     def test_both_bands_appear(self, competition) -> None:
         result = runner.invoke(app, ["compete", str(competition), "6"])
-        assert "St Mary" in result.stdout
+        assert "St Mary" in result.output
 
     def test_a_file_with_no_bands(self, tmp_path) -> None:
         path = tmp_path / "empty.txt"

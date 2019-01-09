@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from fastapi.testclient import TestClient
+from blueline.api.testing import Client
 
 from blueline.api import deps
 from blueline.api.app import create_app
@@ -25,8 +25,7 @@ def tight():
     """An application that gives up after three requests."""
     deps.reset()
     settings = Settings(database_url=MEMORY_URL, request_limit=3, request_window=60.0)
-    with TestClient(create_app(settings)) as client:
-        yield client
+    yield Client(create_app(settings))
     deps.reset()
 
 
@@ -75,16 +74,10 @@ class TestCounter:
 
 class TestCallerOf:
     def test_an_address_identifies_a_caller(self) -> None:
-        class Fake:
-            client = type("Client", (), {"host": "10.0.0.4"})()
-
-        assert caller_of(Fake()) == "10.0.0.4"
+        assert caller_of({"REMOTE_ADDR": "10.0.0.4"}) == "10.0.0.4"
 
     def test_nobody_at_all(self) -> None:
-        class Fake:
-            client = None
-
-        assert caller_of(Fake()) == "unknown"
+        assert caller_of({}) == "unknown"
 
 
 class TestOverHttp:

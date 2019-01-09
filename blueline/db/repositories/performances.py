@@ -108,5 +108,6 @@ class PerformanceRepository(Repository[StoredPerformance]):
         return [stored for stored in self.all() if to_performance(stored).is_peal]
 
     def places(self) -> List[str]:
-        statement = self.session.query(StoredPerformance.place).distinct().order_by(StoredPerformance.place)
-        return list(statement.all())
+        # One column, so each row is a tuple of one.
+        statement = self.session.query(StoredPerformance.place).distinct()
+        return [row[0] for row in statement.order_by(StoredPerformance.place).all()]

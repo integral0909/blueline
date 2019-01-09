@@ -13,7 +13,8 @@ from typing import Dict
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -33,7 +34,7 @@ def make_engine(url: str = DEFAULT_URL, echo: bool = False) -> Engine:
     another finds no tables at all. A static pool hands out the one connection
     to everybody, which is what makes an in memory database behave like a file.
     """
-    kwargs: Dict[str, object] = {"echo": echo, "future": True}
+    kwargs: Dict[str, object] = {"echo": echo}
     if ":memory:" in url:
         kwargs["poolclass"] = StaticPool
         kwargs["connect_args"] = {"check_same_thread": False}
@@ -42,7 +43,7 @@ def make_engine(url: str = DEFAULT_URL, echo: bool = False) -> Engine:
         from sqlalchemy import event
 
         @event.listens_for(engine, "connect")
-        def _set_pragma(connection, _record):  # type: ignore[no-untyped-def]
+        def _set_pragma(connection, _record):
             # Sqlite ignores foreign keys unless asked, which turns a cascade
             # into a pile of orphaned rows nobody notices until much later.
             cursor = connection.cursor()
@@ -61,7 +62,7 @@ def drop_all(engine: Engine) -> None:
 
 
 def session_factory(engine: Engine) -> sessionmaker[Session]:
-    return sessionmaker(bind=engine, expire_on_commit=False, future=True)
+    return sessionmaker(bind=engine, expire_on_commit=False)
 
 
 @contextmanager

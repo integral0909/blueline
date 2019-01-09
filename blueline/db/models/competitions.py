@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-from typing import List
-
-from datetime import date, datetime
-
 from sqlalchemy import (
     Column,
     Date,
@@ -47,9 +43,12 @@ class StoredCompetition(Base):
     created_at = Column(DateTime(timezone=True), default=now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=now, onupdate=now, nullable=False)
 
-    entries = relationship("StoredEntry", back_populates="competition",
+    entries = relationship(
+        "StoredEntry",
+        back_populates="competition",
         cascade="all, delete-orphan",
-        order_by="StoredEntry.position",)
+        order_by="StoredEntry.position",
+    )
 
     def __repr__(self) -> str:
         return f"StoredCompetition({self.name!r}, {self.held_on})"
@@ -73,8 +72,8 @@ class StoredEntry(Base):
     )
 
     id = Column(Integer, primary_key=True)
-    competition_id: Mapped[int] = mapped_column(
-        ForeignKey("competitions.id", ondelete="CASCADE"), index=True
+    competition_id = Column(
+        ForeignKey("competitions.id", ondelete="CASCADE"), index=True, nullable=False
     )
     band = Column(String(120), nullable=False)
     position = Column(Integer, nullable=False)

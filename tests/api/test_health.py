@@ -23,33 +23,43 @@ class TestReadiness:
         assert check["took"] >= 0
 
     def test_a_broken_database_is_not_ready(self, client):
+        # Drop the table the readiness check looks at, through the same
+        # factory the application uses, then ask.
         from sqlalchemy import text
 
-        from blueline.api.deps import get_session
+        from blueline.api.deps import get_factory
 
-        def broken():
-            session = next(get_session())
-            session.execute(text("drop table methods"))
-            yield session
-
-        client.app.dependency_overrides[get_session] = broken
+        session = get_factory()()
         try:
-            response = client.get("/ready")
+            session.execute(text("drop table methods"))
+            session.commit()
         finally:
-            client.app.dependency_overrides.pop(get_session, None)
+            session.close()
+
+        response = client.get("/ready")
         assert response.status_code == 503
         assert response.json()["ready"] is False
 
 
-class TestDocs:
-    def test_the_schema_is_served(self, client):
-        response = client.get("/openapi.json")
-        assert response.status_code == 200
+class TestWhatIsMounted:
+    """There is no generated schema to check against, so check the routes.
 
-    def test_the_schema_names_the_application(self, client):
-        assert client.get("/openapi.json").json()["info"]["title"] == "blueline"
+    A framework would have handed over an openapi document. Writing one by
+    hand and keeping it right would be a second description of the same
+    thing, so what is asserted here is that the paths are actually served.
+    """
 
-    def test_every_route_is_in_the_schema(self, client):
-        paths = client.get("/openapi.json").json()["paths"]
+    def test_the_paths_a_client_needs_are_all_mounted(self, client):
+        from blueline.api.routers import ROUTERS
+
+        served = {path for router in ROUTERS for path in router.paths()}
         for path in ("/health", "/ready", "/analyse", "/methods", "/methods/{title}"):
-            assert path in paths
+            assert path in served
+
+    def test_an_unmounted_path_says_so(self, client):
+        reply = client.get("/nowhere")
+        assert reply.status_code == 404
+        assert "nothing is served" in reply.json()["detail"]
+
+    def test_a_wrong_method_is_not_a_wrong_path(self, client):
+        assert client.delete("/health").status_code == 405

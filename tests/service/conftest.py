@@ -14,8 +14,11 @@ def repository():
     engine = make_engine(MEMORY_URL)
     create_all(engine)
     factory = session_factory(engine)
-    with factory() as session:
+    session = factory()
+    try:
         yield MethodRepository(session)
+    finally:
+        session.close()
     drop_all(engine)
 
 

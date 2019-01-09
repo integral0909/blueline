@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 
 from sqlalchemy import Column, DateTime, Integer, String, Text, UniqueConstraint
-from sqlalchemy.orm import relationship
 
 from blueline.db.models.base import Base, now
 

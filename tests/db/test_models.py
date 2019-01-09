@@ -1,7 +1,6 @@
 from datetime import date
 
 import pytest
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from blueline.db.models import (
@@ -41,7 +40,7 @@ class TestStoringMethods:
         with session_scope(factory) as session:
             session.add(a_method())
         with session_scope(factory) as session:
-            found = session.scalars(select(StoredMethod)).one()
+            found = session.query(StoredMethod).one()
             assert found.title == "Cambridge Surprise Major"
             assert found.stage == 8
 
@@ -69,13 +68,13 @@ class TestStoringMethods:
             session.add(a_method())
             session.add(a_method(title="Cambridge Surprise Minor", stage=6))
         with session_scope(factory) as session:
-            assert len(session.scalars(select(StoredMethod)).all()) == 2
+            assert len(session.query(StoredMethod).all()) == 2
 
     def test_a_classification_may_be_left_off(self, factory):
         with session_scope(factory) as session:
             session.add(a_method(title="Grandsire Triples", classification=None))
         with session_scope(factory) as session:
-            found = session.scalars(select(StoredMethod)).one()
+            found = session.query(StoredMethod).one()
             assert found.classification is None
 
     def test_it_reads_back_as_its_title(self):
@@ -91,7 +90,7 @@ class TestStoringCompositions:
             )
             session.add(method)
         with session_scope(factory) as session:
-            found = session.scalars(select(StoredMethod)).one()
+            found = session.query(StoredMethod).one()
             assert len(found.compositions) == 1
             assert found.compositions[0].method.title == found.title
 
@@ -101,9 +100,9 @@ class TestStoringCompositions:
             method.compositions.append(StoredComposition(title="x", calling="-", length=224))
             session.add(method)
         with session_scope(factory) as session:
-            session.delete(session.scalars(select(StoredMethod)).one())
+            session.delete(session.query(StoredMethod).one())
         with session_scope(factory) as session:
-            assert session.scalars(select(StoredComposition)).all() == []
+            assert session.query(StoredComposition).all() == []
 
     def test_a_composition_defaults_to_unproven(self, factory):
         with session_scope(factory) as session:
@@ -111,7 +110,7 @@ class TestStoringCompositions:
             method.compositions.append(StoredComposition(title="x", calling="-", length=224))
             session.add(method)
         with session_scope(factory) as session:
-            assert session.scalars(select(StoredComposition)).one().is_true is False
+            assert session.query(StoredComposition).one().is_true is False
 
     def test_it_reads_back_as_its_title_and_length(self):
         composition = StoredComposition(title="5040", calling="-", length=5040)
@@ -123,14 +122,14 @@ class TestSessionScope:
         with session_scope(factory) as session:
             session.add(a_method())
         with session_scope(factory) as session:
-            assert session.scalars(select(StoredMethod)).all() != []
+            assert session.query(StoredMethod).all() != []
 
     def test_it_rolls_back_when_something_throws(self, factory):
         with pytest.raises(RuntimeError), session_scope(factory) as session:
             session.add(a_method())
             raise RuntimeError("changed my mind")
         with session_scope(factory) as session:
-            assert session.scalars(select(StoredMethod)).all() == []
+            assert session.query(StoredMethod).all() == []
 
 
 class TestSchema:
@@ -182,7 +181,7 @@ class TestStoringPerformances:
         with session_scope(factory) as session:
             session.add(self.a_performance())
         with session_scope(factory) as session:
-            found = session.scalars(select(StoredPerformance)).one()
+            found = session.query(StoredPerformance).one()
             assert found.method_id is None
             assert found.length == 5024
 
@@ -193,7 +192,7 @@ class TestStoringPerformances:
             session.flush()
             session.add(self.a_performance(method_id=method.id))
         with session_scope(factory) as session:
-            found = session.scalars(select(StoredPerformance)).one()
+            found = session.query(StoredPerformance).one()
             assert found.method.title == "Cambridge Surprise Major"
 
     def test_deleting_the_method_leaves_the_performance_behind(self, factory):
@@ -205,16 +204,16 @@ class TestStoringPerformances:
             session.flush()
             session.add(self.a_performance(method_id=method.id))
         with session_scope(factory) as session:
-            session.delete(session.scalars(select(StoredMethod)).one())
+            session.delete(session.query(StoredMethod).one())
         with session_scope(factory) as session:
-            found = session.scalars(select(StoredPerformance)).one()
+            found = session.query(StoredPerformance).one()
             assert found.method_id is None
 
     def test_the_band_is_stored_as_lines(self, factory):
         with session_scope(factory) as session:
             session.add(self.a_performance())
         with session_scope(factory) as session:
-            found = session.scalars(select(StoredPerformance)).one()
+            found = session.query(StoredPerformance).one()
             assert found.ringers.splitlines() == [
                 "Ann",
                 "Bob",
@@ -230,7 +229,7 @@ class TestStoringPerformances:
         with session_scope(factory) as session:
             session.add(self.a_performance())
         with session_scope(factory) as session:
-            assert session.scalars(select(StoredPerformance)).one().rang_on == date(2023, 3, 18)
+            assert session.query(StoredPerformance).one().rang_on == date(2023, 3, 18)
 
     def test_it_reads_back_as_its_length_and_title(self):
         assert repr(self.a_performance()) == ("StoredPerformance(5024 'Cambridge Surprise Major')")

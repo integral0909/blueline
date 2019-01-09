@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import List, Set
 
-from typer.testing import CliRunner
+from click.testing import CliRunner
 
 from blueline.cli.commands import (
     methods,
@@ -29,7 +29,14 @@ GROUPS = {
 
 
 def names(group) -> Set[str]:
-    return {command.name or command.callback.__name__ for command in group.registered_commands}
+    """The command names in a group, however it happens to hold them.
+
+    A declare.Group keeps a list of built commands; the assembled click group
+    at the top keeps a dict keyed by name.
+    """
+    if hasattr(group, "registered_commands"):
+        return {command.name for command in group.registered_commands}
+    return set(group.commands)
 
 
 class TestSplit:
@@ -69,19 +76,19 @@ class TestRegistered:
             assert names(group) <= registered
 
     def test_there_are_seventy_five_of_them(self):
-        assert len(app.registered_commands) == 75
+        assert len(app.commands) == 75
 
     def test_they_are_all_at_the_top_level(self):
         # Nobody wants to type "blueline methods show".
         result = CliRunner().invoke(app, ["--help"])
-        assert "show" in result.stdout
-        assert "methods" not in result.stdout.split("Commands")[1].split("\n")[1]
+        assert "show" in result.output
+        assert "methods" not in result.output.split("Commands")[1].split("\n")[1]
 
     def test_the_help_lists_them(self):
         result = CliRunner().invoke(app, ["--help"])
         assert result.exit_code == 0
         for command in ("analyse", "prove", "rang", "totals"):
-            assert command in result.stdout
+            assert command in result.output
 
 
 class TestExitCodes:
@@ -155,10 +162,7 @@ class TestFlatNamespace:
     """Every command sits at the top level, so two groups can collide."""
 
     def names(self) -> List[str]:
-        return [
-            command.name or command.callback.__name__.replace("_", "-")
-            for command in app.registered_commands
-        ]
+        return sorted(app.commands)
 
     def test_no_two_commands_share_a_name(self) -> None:
         names = self.names()
@@ -176,8 +180,7 @@ class TestFlatNamespace:
     def test_every_group_is_mounted(self) -> None:
         from blueline.cli.main import GROUPS
 
-        registered = len(app.registered_commands)
-        assert registered == sum(len(group.registered_commands) for group in GROUPS)
+        assert len(app.commands) == sum(len(group.registered_commands) for group in GROUPS)
 
     def test_no_group_is_mounted_twice(self) -> None:
         from blueline.cli.main import GROUPS

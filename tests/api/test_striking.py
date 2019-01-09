@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import List
 
+
 def steady(blows: int, gap: float = 0.2) -> List[float]:
     return [round(index * gap, 4) for index in range(blows)]
 
