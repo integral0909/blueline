@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime
+
 from sqlalchemy import (
-    Column,
     Date,
     DateTime,
     Float,
@@ -14,7 +15,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from blueline.db.models.base import Base, now
 
@@ -34,17 +35,16 @@ class StoredCompetition(Base):
     __tablename__ = "competitions"
     __table_args__ = (UniqueConstraint("name", "held_on", name="uq_competitions_name_held_on"),)
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(120), index=True, nullable=False)
-    held_on = Column(Date, index=True, nullable=False)
-    place = Column(String(160), default="", nullable=False)
-    stage = Column(Integer, nullable=False)
-    judge = Column(String(120), default="", nullable=False)
-    created_at = Column(DateTime(timezone=True), default=now, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=now, onupdate=now, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), index=True)
+    held_on: Mapped[date] = mapped_column(Date, index=True)
+    place: Mapped[str] = mapped_column(String(160), default="")
+    stage: Mapped[int] = mapped_column(Integer)
+    judge: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
-    entries = relationship(
-        "StoredEntry",
+    entries: Mapped[list[StoredEntry]] = relationship(
         back_populates="competition",
         cascade="all, delete-orphan",
         order_by="StoredEntry.position",
@@ -71,18 +71,18 @@ class StoredEntry(Base):
         Index("ix_entries_position", "competition_id", "position"),
     )
 
-    id = Column(Integer, primary_key=True)
-    competition_id = Column(
-        ForeignKey("competitions.id", ondelete="CASCADE"), index=True, nullable=False
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    competition_id: Mapped[int] = mapped_column(
+        ForeignKey("competitions.id", ondelete="CASCADE"), index=True
     )
-    band = Column(String(120), nullable=False)
-    position = Column(Integer, nullable=False)
-    faults = Column(Integer, nullable=False)
-    percentage = Column(Float, nullable=False)
-    drift = Column(String(16), default="", nullable=False)
-    note = Column(Text, default="", nullable=False)
+    band: Mapped[str] = mapped_column(String(120))
+    position: Mapped[int] = mapped_column(Integer)
+    faults: Mapped[int] = mapped_column(Integer)
+    percentage: Mapped[float] = mapped_column(Float)
+    drift: Mapped[str] = mapped_column(String(16), default="")
+    note: Mapped[str] = mapped_column(Text, default="")
 
-    competition = relationship("StoredCompetition", back_populates="entries")
+    competition: Mapped[StoredCompetition] = relationship(back_populates="entries")
 
     def __repr__(self) -> str:
         return f"StoredEntry({self.band!r}, {self.position})"

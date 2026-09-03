@@ -7,7 +7,7 @@
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
-PY=.venv2018/bin
+PY=.venvnow/bin
 
 run () {
   printf '%-8s' "$1"

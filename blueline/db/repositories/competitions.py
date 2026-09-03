@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from datetime import date
 
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from blueline.core.competitions import Competition, Entry
 from blueline.db.base import Repository
@@ -70,12 +68,12 @@ class CompetitionRepository(Repository[StoredCompetition]):
             )
         return self.add_row(to_stored_competition(competition))
 
-    def find(self, name: str, held_on: date) -> Optional[StoredCompetition]:
-        statement = self.session.query(StoredCompetition).filter(
+    def find(self, name: str, held_on: date) -> StoredCompetition | None:
+        statement = select(StoredCompetition).where(
             func.lower(StoredCompetition.name) == name.strip().lower(),
             StoredCompetition.held_on == held_on,
         )
-        return statement.one_or_none()
+        return self.session.scalars(statement).one_or_none()
 
     def get(self, competition_id: int) -> StoredCompetition:
         found = self.get_by_id(competition_id)
@@ -88,36 +86,36 @@ class CompetitionRepository(Repository[StoredCompetition]):
 
     def search(
         self,
-        name: Optional[str] = None,
-        place: Optional[str] = None,
-        band: Optional[str] = None,
-        stage: Optional[int] = None,
-    ) -> List[StoredCompetition]:
+        name: str | None = None,
+        place: str | None = None,
+        band: str | None = None,
+        stage: int | None = None,
+    ) -> list[StoredCompetition]:
         """Sheets matching everything asked for, most recent first."""
-        statement = self.session.query(StoredCompetition)
+        statement = select(StoredCompetition)
         if name is not None:
-            statement = statement.filter(StoredCompetition.name.ilike(f"%{name.strip()}%"))
+            statement = statement.where(StoredCompetition.name.ilike(f"%{name.strip()}%"))
         if place is not None:
-            statement = statement.filter(StoredCompetition.place.ilike(f"%{place.strip()}%"))
+            statement = statement.where(StoredCompetition.place.ilike(f"%{place.strip()}%"))
         if stage is not None:
-            statement = statement.filter(StoredCompetition.stage == stage)
+            statement = statement.where(StoredCompetition.stage == stage)
         if band is not None:
             # Joined rather than filtered afterwards. A district with twenty
             # years of sheets is a lot of rows to load in order to throw most
             # of them away.
-            statement = statement.join(StoredEntry).filter(
+            statement = statement.join(StoredEntry).where(
                 StoredEntry.band.ilike(f"%{band.strip()}%")
             )
         statement = statement.order_by(StoredCompetition.held_on.desc(), StoredCompetition.name)
-        return list(statement.distinct().all())
+        return list(self.session.scalars(statement).unique().all())
 
-    def all(self) -> List[StoredCompetition]:
+    def all(self) -> list[StoredCompetition]:
         return self.search()
 
-    def sheets(self) -> List[Competition]:
+    def sheets(self) -> list[Competition]:
         """Everything stored, as the core's type."""
         return [to_competition(stored) for stored in self.all()]
 
-    def for_band(self, band: str) -> List[Competition]:
+    def for_band(self, band: str) -> list[Competition]:
         """Every sheet a band appears on, as the core's type."""
         return [to_competition(stored) for stored in self.search(band=band)]

@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-
-from sqlalchemy import func
+from sqlalchemy import Select, func, select
 
 from blueline.analysis import analyse
 from blueline.core.method import Method
-from sqlalchemy.orm import Query
-
 from blueline.db.base import Repository
 from blueline.db.models import StoredComposition, StoredMethod
 from blueline.errors import LibraryError
 
 
-def to_stored(method: Method, name: Optional[str] = None) -> StoredMethod:
+def to_stored(method: Method, name: str | None = None) -> StoredMethod:
     """Work out everything a method needs to be stored under."""
     report = analyse(method, name=name)
     return StoredMethod(
@@ -37,17 +33,17 @@ class MethodRepository(Repository[StoredMethod]):
 
     model = StoredMethod
 
-    def add(self, method: Method, name: Optional[str] = None) -> StoredMethod:
+    def add(self, method: Method, name: str | None = None) -> StoredMethod:
         stored = to_stored(method, name=name)
         if self.find(stored.title) is not None:
             raise LibraryError(f"{stored.title} is already stored")
         return self.add_row(stored)
 
-    def find(self, title: str) -> Optional[StoredMethod]:
-        statement = self.session.query(StoredMethod).filter(
+    def find(self, title: str) -> StoredMethod | None:
+        statement = select(StoredMethod).where(
             func.lower(StoredMethod.title) == title.strip().lower()
         )
-        return statement.one_or_none()
+        return self.session.scalars(statement).one_or_none()
 
     def get(self, title: str) -> StoredMethod:
         found = self.find(title)
@@ -60,38 +56,35 @@ class MethodRepository(Repository[StoredMethod]):
 
     def _search(
         self,
-        name: Optional[str] = None,
-        stage: Optional[int] = None,
-        classification: Optional[str] = None,
-    ) -> "Query[StoredMethod]":
-        statement = self.session.query(StoredMethod)
+        name: str | None = None,
+        stage: int | None = None,
+        classification: str | None = None,
+    ) -> Select[tuple[StoredMethod]]:
+        statement = select(StoredMethod)
         if name is not None:
-            statement = statement.filter(StoredMethod.name.ilike(f"%{name.strip()}%"))
+            statement = statement.where(StoredMethod.name.ilike(f"%{name.strip()}%"))
         if stage is not None:
-            statement = statement.filter(StoredMethod.stage == stage)
+            statement = statement.where(StoredMethod.stage == stage)
         if classification is not None:
-            statement = statement.filter(
+            statement = statement.where(
                 func.lower(StoredMethod.classification) == classification.strip().lower()
             )
         return statement.order_by(StoredMethod.stage, StoredMethod.title)
 
     def search(
         self,
-        name: Optional[str] = None,
-        stage: Optional[int] = None,
-        classification: Optional[str] = None,
-    ) -> List[StoredMethod]:
-        return list(self._search(name, stage, classification).all())
+        name: str | None = None,
+        stage: int | None = None,
+        classification: str | None = None,
+    ) -> list[StoredMethod]:
+        return list(self.session.scalars(self._search(name, stage, classification)).all())
 
-    def all(self) -> List[StoredMethod]:
+    def all(self) -> list[StoredMethod]:
         return self.search()
 
-    def stages(self) -> List[int]:
-        # A one column query gives back rows rather than values, so the
-        # stage has to be taken out of each of them.
-        statement = self.session.query(StoredMethod.stage).distinct()
-        ordered = statement.order_by(StoredMethod.stage)
-        return [row[0] for row in ordered.all()]
+    def stages(self) -> list[int]:
+        statement = select(StoredMethod.stage).distinct().order_by(StoredMethod.stage)
+        return list(self.session.scalars(statement).all())
 
 
 class CompositionRepository(Repository[StoredComposition]):
@@ -106,7 +99,7 @@ class CompositionRepository(Repository[StoredComposition]):
         calling: str,
         length: int,
         is_true: bool,
-        composer: Optional[str] = None,
+        composer: str | None = None,
     ) -> StoredComposition:
         composition = StoredComposition(
             method=method,
@@ -118,18 +111,14 @@ class CompositionRepository(Repository[StoredComposition]):
         )
         return self.add_row(composition)
 
-    def for_method(self, method: StoredMethod) -> List[StoredComposition]:
+    def for_method(self, method: StoredMethod) -> list[StoredComposition]:
         statement = (
-            self.session.query(StoredComposition)
-            .filter(StoredComposition.method_id == method.id)
+            select(StoredComposition)
+            .where(StoredComposition.method_id == method.id)
             .order_by(StoredComposition.length.desc(), StoredComposition.title)
         )
-        return list(statement.all())
+        return list(self.session.scalars(statement).all())
 
-    def longest(self, limit: int = 10) -> List[StoredComposition]:
-        statement = (
-            self.session.query(StoredComposition)
-            .order_by(StoredComposition.length.desc())
-            .limit(limit)
-        )
-        return list(statement.all())
+    def longest(self, limit: int = 10) -> list[StoredComposition]:
+        statement = select(StoredComposition).order_by(StoredComposition.length.desc()).limit(limit)
+        return list(self.session.scalars(statement).all())

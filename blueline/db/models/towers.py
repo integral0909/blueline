@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime
+
 from sqlalchemy import (
-    Column,
     Date,
     DateTime,
     Float,
@@ -13,9 +14,10 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from blueline.db.models.base import Base, now
+from blueline.db.models.methods import StoredMethod
 
 
 class StoredTower(Base):
@@ -30,11 +32,11 @@ class StoredTower(Base):
     __tablename__ = "towers"
     __table_args__ = (UniqueConstraint("place", name="uq_towers_place"),)
 
-    id = Column(Integer, primary_key=True)
-    place = Column(String(160), index=True, nullable=False)
-    bells = Column(Integer, index=True, nullable=False)
-    tenor_pounds = Column(Integer, index=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=now, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    place: Mapped[str] = mapped_column(String(160), index=True)
+    bells: Mapped[int] = mapped_column(Integer, index=True)
+    tenor_pounds: Mapped[int] = mapped_column(Integer, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
     def __repr__(self) -> str:
         return f"StoredTower({self.place!r}, {self.bells})"
@@ -51,30 +53,30 @@ class StoredPerformance(Base):
 
     __tablename__ = "performances"
 
-    id = Column(Integer, primary_key=True)
-    method_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    method_id: Mapped[int | None] = mapped_column(
         ForeignKey("methods.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    tower_id = Column(
+    tower_id: Mapped[int | None] = mapped_column(
         ForeignKey("towers.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    title = Column(String(120), index=True, nullable=False)
-    stage = Column(Integer, index=True, nullable=False)
-    length = Column(Integer, index=True, nullable=False)
-    rang_on = Column(Date, index=True, nullable=False)
-    place = Column(String(160), index=True, nullable=False)
-    composer = Column(String(80), nullable=True)
+    title: Mapped[str] = mapped_column(String(120), index=True)
+    stage: Mapped[int] = mapped_column(Integer, index=True)
+    length: Mapped[int] = mapped_column(Integer, index=True)
+    rang_on: Mapped[date] = mapped_column(Date, index=True)
+    place: Mapped[str] = mapped_column(String(160), index=True)
+    composer: Mapped[str | None] = mapped_column(String(80), nullable=True)
     #: Rows a minute, so the time it took can be worked out again. Stored
     #: because it is a fact about the performance, unlike the duration, which
     #: falls out of it and the length.
-    peal_speed = Column(Float, default=30.0, nullable=False)
+    peal_speed: Mapped[float] = mapped_column(Float, default=30.0)
     #: The band, one name per bell, separated by newlines.
-    ringers = Column(Text, nullable=False)
-    conductor = Column(Integer, default=1, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=now, nullable=False)
+    ringers: Mapped[str] = mapped_column(Text)
+    conductor: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
-    method = relationship("StoredMethod")
-    tower = relationship("StoredTower")
+    method: Mapped[StoredMethod | None] = relationship()
+    tower: Mapped[StoredTower | None] = relationship()
 
     def __repr__(self) -> str:
         return f"StoredPerformance({self.length} {self.title!r})"

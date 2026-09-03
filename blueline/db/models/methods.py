@@ -2,17 +2,10 @@
 
 from __future__ import annotations
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import relationship
+from datetime import datetime
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from blueline.db.models.base import Base, now
 
@@ -23,17 +16,16 @@ class StoredMethod(Base):
     __tablename__ = "methods"
     __table_args__ = (UniqueConstraint("title", name="uq_methods_title"),)
 
-    id = Column(Integer, primary_key=True)
-    title = Column(String(120), index=True, nullable=False)
-    name = Column(String(80), index=True, nullable=False)
-    stage = Column(Integer, index=True, nullable=False)
-    notation = Column(Text, nullable=False)
-    classification = Column(String(40), nullable=True, index=True)
-    created_at = Column(DateTime(timezone=True), default=now, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=now, onupdate=now, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(120), index=True)
+    name: Mapped[str] = mapped_column(String(80), index=True)
+    stage: Mapped[int] = mapped_column(Integer, index=True)
+    notation: Mapped[str] = mapped_column(Text)
+    classification: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
-    compositions = relationship(
-        "StoredComposition",
+    compositions: Mapped[list[StoredComposition]] = relationship(
         back_populates="method",
         cascade="all, delete-orphan",
         passive_deletes=False,
@@ -48,16 +40,16 @@ class StoredComposition(Base):
 
     __tablename__ = "compositions"
 
-    id = Column(Integer, primary_key=True)
-    method_id = Column(ForeignKey("methods.id", ondelete="CASCADE"), index=True, nullable=False)
-    title = Column(String(120), nullable=False)
-    composer = Column(String(80), nullable=True)
-    calling = Column(Text, nullable=False)
-    length = Column(Integer, index=True, nullable=False)
-    is_true = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=now, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    method_id: Mapped[int] = mapped_column(ForeignKey("methods.id", ondelete="CASCADE"), index=True)
+    title: Mapped[str] = mapped_column(String(120))
+    composer: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    calling: Mapped[str] = mapped_column(Text)
+    length: Mapped[int] = mapped_column(Integer, index=True)
+    is_true: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
-    method = relationship("StoredMethod", back_populates="compositions")
+    method: Mapped[StoredMethod] = relationship(back_populates="compositions")
 
     def __repr__(self) -> str:
         return f"StoredComposition({self.title!r}, {self.length})"

@@ -8,13 +8,10 @@ possible to run a test inside a transaction and roll it back afterwards.
 
 from __future__ import annotations
 
-from typing import Dict
-
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -34,7 +31,7 @@ def make_engine(url: str = DEFAULT_URL, echo: bool = False) -> Engine:
     another finds no tables at all. A static pool hands out the one connection
     to everybody, which is what makes an in memory database behave like a file.
     """
-    kwargs: Dict[str, object] = {"echo": echo}
+    kwargs: dict[str, object] = {"echo": echo, "future": True}
     if ":memory:" in url:
         kwargs["poolclass"] = StaticPool
         kwargs["connect_args"] = {"check_same_thread": False}
@@ -62,7 +59,7 @@ def drop_all(engine: Engine) -> None:
 
 
 def session_factory(engine: Engine) -> sessionmaker[Session]:
-    return sessionmaker(bind=engine, expire_on_commit=False)
+    return sessionmaker(bind=engine, expire_on_commit=False, future=True)
 
 
 @contextmanager

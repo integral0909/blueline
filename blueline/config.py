@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import Optional, Set
 
 import os
-import toml
+import tomllib
 from dataclasses import dataclass, fields, replace
 from pathlib import Path
 
@@ -118,10 +118,8 @@ def from_file(path: Optional[Path] = None) -> Settings:
         return Settings()
 
     try:
-        document = toml.loads(where.read_text())
-    # ValueError as well: this version raises a bare one for some
-    # kinds of malformed input rather than its own error.
-    except (toml.TomlDecodeError, ValueError, OSError) as error:
+        document = tomllib.loads(where.read_text())
+    except (tomllib.TOMLDecodeError, OSError) as error:
         raise ConfigError(f"{where}: {error}") from error
 
     table = document.get(TABLE, document)

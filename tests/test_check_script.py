@@ -36,7 +36,7 @@ class TestScript:
         assert "exit 1" in source
 
     def test_it_uses_the_tools_in_the_virtualenv(self, source):
-        assert "PY=.venv2018/bin" in source
+        assert "PY=.venvnow/bin" in source
         assert "$PY/pytest" in source
 
 

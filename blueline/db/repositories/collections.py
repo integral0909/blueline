@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from blueline.core.collections import Collection
 from blueline.core.titles import as_lines, from_lines
@@ -39,11 +37,11 @@ class CollectionRepository(Repository[StoredCollection]):
             raise LibraryError(f"{collection.name} is already stored")
         return self.add_row(to_stored_collection(collection))
 
-    def find(self, name: str) -> Optional[StoredCollection]:
-        statement = self.session.query(StoredCollection).filter(
+    def find(self, name: str) -> StoredCollection | None:
+        statement = select(StoredCollection).where(
             func.lower(StoredCollection.name) == name.strip().lower()
         )
-        return statement.one_or_none()
+        return self.session.scalars(statement).one_or_none()
 
     def get(self, name: str) -> StoredCollection:
         found = self.find(name)
@@ -64,15 +62,15 @@ class CollectionRepository(Repository[StoredCollection]):
     def remove(self, name: str) -> None:
         self.delete_row(self.get(name))
 
-    def all(self) -> List[StoredCollection]:
-        statement = self.session.query(StoredCollection).order_by(StoredCollection.name)
-        return list(statement.all())
+    def all(self) -> list[StoredCollection]:
+        statement = select(StoredCollection).order_by(StoredCollection.name)
+        return list(self.session.scalars(statement).all())
 
-    def sets(self) -> List[Collection]:
+    def sets(self) -> list[Collection]:
         """Everything stored, as the core's type."""
         return [to_collection(stored) for stored in self.all()]
 
-    def holding(self, title: str) -> List[StoredCollection]:
+    def holding(self, title: str) -> list[StoredCollection]:
         """Collections with this title among their methods.
 
         Matched on the stored text, so this finds Cambridge Surprise Major and
@@ -80,8 +78,8 @@ class CollectionRepository(Repository[StoredCollection]):
         this narrows the query.
         """
         statement = (
-            self.session.query(StoredCollection)
-            .filter(StoredCollection.titles.ilike(f"%{title.strip()}%"))
+            select(StoredCollection)
+            .where(StoredCollection.titles.ilike(f"%{title.strip()}%"))
             .order_by(StoredCollection.name)
         )
-        return list(statement.all())
+        return list(self.session.scalars(statement).all())

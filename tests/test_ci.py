@@ -41,13 +41,10 @@ class TestWorkflow:
         assert in_script == sorted(in_script)
 
     def test_it_says_what_python_the_package_needs(self, workflow):
-        assert 'python_requires=">=3.7"' in (ROOT / "setup.py").read_text()
+        assert 'python_requires=">=3.11"' in (ROOT / "setup.py").read_text()
 
-    def test_it_runs_on_a_python_that_still_exists(self, workflow):
-        # 3.7 is what the source targets and what setup.py declares. No
-        # runner offers it any more, so the checks run on something current;
-        # nothing here uses syntax newer than 3.7 either way.
-        assert "python-version:" in workflow
+    def test_the_workflow_runs_the_python_the_package_asks_for(self, workflow):
+        assert 'python-version: "3.11"' in workflow
 
     def test_it_installs_the_dev_extras(self, workflow):
         assert 'pip install -e ".[dev]"' in workflow
@@ -63,9 +60,10 @@ class TestSameToolsBothSides:
     def test_each_tool_is_a_dev_extra(self, tool):
         assert f'"{tool}"' in (ROOT / "setup.py").read_text()
 
-    def test_the_runtime_dependencies_are_pinned(self):
-        # The library this is built on is pinned exactly; the test tooling
-        # deliberately is not, because it has to keep working.
+    def test_the_runtime_dependencies_have_a_floor(self):
+        # A minimum rather than an exact pin. The versions this needs are
+        # current, and holding a library at one release is how a project ends
+        # up where this one was: years behind and unable to run anywhere.
         setup = (ROOT / "setup.py").read_text()
-        for pin in ("SQLAlchemy==", "alembic==", "click==", "structlog==", "toml=="):
-            assert pin in setup
+        for floor in ("SQLAlchemy>=", "alembic>=", "click>=", "structlog>="):
+            assert floor in setup

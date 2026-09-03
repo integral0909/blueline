@@ -107,7 +107,12 @@ class _PathType(click.Path):
     """
 
     def convert(self, value: Any, param: Any, ctx: Any) -> Any:
-        return Path(super().convert(value, param, ctx))
+        # click can hand back bytes, which Path will not take; everything
+        # this is pointed at is a text path.
+        found = super().convert(value, param, ctx)
+        if isinstance(found, bytes):
+            found = found.decode()
+        return Path(found)
 
 
 def _click_type(annotation: Any, marker: Any) -> Any:

@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-
+from sqlalchemy import select
 
 from blueline.core.bands import Band
 from blueline.core.performance import Performance
@@ -14,8 +13,8 @@ from blueline.errors import LibraryError
 
 def to_stored_performance(
     performance: Performance,
-    method: Optional[StoredMethod] = None,
-    tower: Optional[StoredTower] = None,
+    method: StoredMethod | None = None,
+    tower: StoredTower | None = None,
 ) -> StoredPerformance:
     """Flatten a performance for storing, band and all."""
     return StoredPerformance(
@@ -58,8 +57,8 @@ class PerformanceRepository(Repository[StoredPerformance]):
     def add(
         self,
         performance: Performance,
-        method: Optional[StoredMethod] = None,
-        tower: Optional[StoredTower] = None,
+        method: StoredMethod | None = None,
+        tower: StoredTower | None = None,
     ) -> StoredPerformance:
         return self.add_row(to_stored_performance(performance, method, tower))
 
@@ -71,12 +70,12 @@ class PerformanceRepository(Repository[StoredPerformance]):
 
     def search(
         self,
-        place: Optional[str] = None,
-        title: Optional[str] = None,
-        stage: Optional[int] = None,
-        min_length: Optional[int] = None,
-        ringer: Optional[str] = None,
-    ) -> List[StoredPerformance]:
+        place: str | None = None,
+        title: str | None = None,
+        stage: int | None = None,
+        min_length: int | None = None,
+        ringer: str | None = None,
+    ) -> list[StoredPerformance]:
         """Performances matching everything asked for, most recent first.
 
         A ringer is matched against the whole band as stored. That is a
@@ -84,30 +83,29 @@ class PerformanceRepository(Repository[StoredPerformance]):
         a band that has her and also in one that has Annabel, and is what
         somebody typing a name into a box expects.
         """
-        statement = self.session.query(StoredPerformance)
+        statement = select(StoredPerformance)
         if place is not None:
-            statement = statement.filter(StoredPerformance.place.ilike(f"%{place.strip()}%"))
+            statement = statement.where(StoredPerformance.place.ilike(f"%{place.strip()}%"))
         if title is not None:
-            statement = statement.filter(StoredPerformance.title.ilike(f"%{title.strip()}%"))
+            statement = statement.where(StoredPerformance.title.ilike(f"%{title.strip()}%"))
         if stage is not None:
-            statement = statement.filter(StoredPerformance.stage == stage)
+            statement = statement.where(StoredPerformance.stage == stage)
         if min_length is not None:
-            statement = statement.filter(StoredPerformance.length >= min_length)
+            statement = statement.where(StoredPerformance.length >= min_length)
         if ringer is not None:
-            statement = statement.filter(StoredPerformance.ringers.ilike(f"%{ringer.strip()}%"))
+            statement = statement.where(StoredPerformance.ringers.ilike(f"%{ringer.strip()}%"))
         statement = statement.order_by(
             StoredPerformance.rang_on.desc(), StoredPerformance.id.desc()
         )
-        return list(statement.all())
+        return list(self.session.scalars(statement).all())
 
-    def all(self) -> List[StoredPerformance]:
+    def all(self) -> list[StoredPerformance]:
         return self.search()
 
-    def peals(self) -> List[StoredPerformance]:
+    def peals(self) -> list[StoredPerformance]:
         """Only the ones long enough to count as peals."""
         return [stored for stored in self.all() if to_performance(stored).is_peal]
 
-    def places(self) -> List[str]:
-        # One column, so each row is a tuple of one.
-        statement = self.session.query(StoredPerformance.place).distinct()
-        return [row[0] for row in statement.order_by(StoredPerformance.place).all()]
+    def places(self) -> list[str]:
+        statement = select(StoredPerformance.place).distinct().order_by(StoredPerformance.place)
+        return list(self.session.scalars(statement).all())

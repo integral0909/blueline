@@ -78,6 +78,4 @@ class TestAddAndDelete:
         # and its compositions together would be impossible.
         methods = MethodRepository(session)
         methods.add(PLAIN_BOB_MINOR)
-        # in_transaction() arrived in 1.4; the transaction itself is what
-        # there is to look at here.
-        assert session.transaction is not None
+        assert session.in_transaction()

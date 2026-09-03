@@ -6,9 +6,9 @@ other table, which is what makes splitting them by subject possible at all.
 
 from __future__ import annotations
 
-from datetime import timezone, datetime
+from datetime import UTC, datetime
 
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
 
 def now() -> datetime:
@@ -17,8 +17,8 @@ def now() -> datetime:
     Naive datetimes in a database are a slow leak: everything works until two
     machines in different places disagree about what six o'clock meant.
     """
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
-#: 1.2 builds the base with a factory rather than by subclassing.
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Integer, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, Integer, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
 
 from blueline.db.models.base import Base, now
 
@@ -20,12 +22,12 @@ class StoredRinger(Base):
     __tablename__ = "ringers"
     __table_args__ = (UniqueConstraint("name", name="uq_ringers_name"),)
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(80), index=True, nullable=False)
-    can_ring = Column(Text, default="", nullable=False)
-    learning = Column(Text, default="", nullable=False)
-    created_at = Column(DateTime(timezone=True), default=now, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=now, onupdate=now, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(80), index=True)
+    can_ring: Mapped[str] = mapped_column(Text, default="")
+    learning: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
     def __repr__(self) -> str:
         return f"StoredRinger({self.name!r})"

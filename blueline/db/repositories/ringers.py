@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from blueline.core.ringers import Ringer
 from blueline.core.titles import as_lines, from_lines
@@ -39,11 +37,11 @@ class RingerRepository(Repository[StoredRinger]):
             raise LibraryError(f"{ringer.name} is already stored")
         return self.add_row(to_stored_ringer(ringer))
 
-    def find(self, name: str) -> Optional[StoredRinger]:
-        statement = self.session.query(StoredRinger).filter(
+    def find(self, name: str) -> StoredRinger | None:
+        statement = select(StoredRinger).where(
             func.lower(StoredRinger.name) == name.strip().lower()
         )
-        return statement.one_or_none()
+        return self.session.scalars(statement).one_or_none()
 
     def get(self, name: str) -> StoredRinger:
         found = self.find(name)
@@ -64,15 +62,15 @@ class RingerRepository(Repository[StoredRinger]):
     def remove(self, name: str) -> None:
         self.delete_row(self.get(name))
 
-    def all(self) -> List[StoredRinger]:
-        statement = self.session.query(StoredRinger).order_by(StoredRinger.name)
-        return list(statement.all())
+    def all(self) -> list[StoredRinger]:
+        statement = select(StoredRinger).order_by(StoredRinger.name)
+        return list(self.session.scalars(statement).all())
 
-    def band(self) -> List[Ringer]:
+    def band(self) -> list[Ringer]:
         """Everybody, as the core's type."""
         return [to_ringer(stored) for stored in self.all()]
 
-    def who_rings(self, title: str) -> List[StoredRinger]:
+    def who_rings(self, title: str) -> list[StoredRinger]:
         """Everybody with this title among what they can ring.
 
         Matched on the stored text, which is titles separated by newlines, so
@@ -80,8 +78,8 @@ class RingerRepository(Repository[StoredRinger]):
         longer title. The service checks properly; this narrows the query.
         """
         statement = (
-            self.session.query(StoredRinger)
-            .filter(StoredRinger.can_ring.ilike(f"%{title.strip()}%"))
+            select(StoredRinger)
+            .where(StoredRinger.can_ring.ilike(f"%{title.strip()}%"))
             .order_by(StoredRinger.name)
         )
-        return list(statement.all())
+        return list(self.session.scalars(statement).all())

@@ -9,8 +9,9 @@ worth keeping separate anyway.
 
 from __future__ import annotations
 
-from typing import Generic, Optional, Type, TypeVar
+from typing import Generic, TypeVar
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from blueline.db.models import Base
@@ -27,16 +28,16 @@ class Repository(Generic[Row]):
     """
 
     #: The mapped class this repository is for.
-    model: Type[Row]
+    model: type[Row]
 
     def __init__(self, session: Session) -> None:
         self.session = session
 
     def count(self) -> int:
-        return self.session.query(self.model).count()
+        return self.session.scalar(select(func.count()).select_from(self.model)) or 0
 
-    def get_by_id(self, row_id: int) -> Optional[Row]:
-        return self.session.query(self.model).get(row_id)
+    def get_by_id(self, row_id: int) -> Row | None:
+        return self.session.get(self.model, row_id)
 
     def add_row(self, row: Row) -> Row:
         """Put a row in and give it back with its id filled in."""

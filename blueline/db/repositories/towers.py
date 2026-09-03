@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from blueline.core.towers import Tower, weight_from_pounds
 from blueline.db.base import Repository
@@ -38,11 +36,11 @@ class TowerRepository(Repository[StoredTower]):
             raise LibraryError(f"{tower.place} is already stored")
         return self.add_row(to_stored_tower(tower))
 
-    def find(self, place: str) -> Optional[StoredTower]:
-        statement = self.session.query(StoredTower).filter(
+    def find(self, place: str) -> StoredTower | None:
+        statement = select(StoredTower).where(
             func.lower(StoredTower.place) == place.strip().lower()
         )
-        return statement.one_or_none()
+        return self.session.scalars(statement).one_or_none()
 
     def get(self, place: str) -> StoredTower:
         found = self.find(place)
@@ -55,31 +53,31 @@ class TowerRepository(Repository[StoredTower]):
 
     def search(
         self,
-        place: Optional[str] = None,
-        min_bells: Optional[int] = None,
-        max_bells: Optional[int] = None,
-        min_tenor_pounds: Optional[int] = None,
-    ) -> List[StoredTower]:
+        place: str | None = None,
+        min_bells: int | None = None,
+        max_bells: int | None = None,
+        min_tenor_pounds: int | None = None,
+    ) -> list[StoredTower]:
         """Towers matching everything asked for, heaviest first.
 
         Heaviest first because that is the order anybody browsing a list of
         towers wants them: the notable ones at the top.
         """
-        statement = self.session.query(StoredTower)
+        statement = select(StoredTower)
         if place is not None:
-            statement = statement.filter(StoredTower.place.ilike(f"%{place.strip()}%"))
+            statement = statement.where(StoredTower.place.ilike(f"%{place.strip()}%"))
         if min_bells is not None:
-            statement = statement.filter(StoredTower.bells >= min_bells)
+            statement = statement.where(StoredTower.bells >= min_bells)
         if max_bells is not None:
-            statement = statement.filter(StoredTower.bells <= max_bells)
+            statement = statement.where(StoredTower.bells <= max_bells)
         if min_tenor_pounds is not None:
-            statement = statement.filter(StoredTower.tenor_pounds >= min_tenor_pounds)
+            statement = statement.where(StoredTower.tenor_pounds >= min_tenor_pounds)
         statement = statement.order_by(StoredTower.tenor_pounds.desc(), StoredTower.place)
-        return list(statement.all())
+        return list(self.session.scalars(statement).all())
 
-    def all(self) -> List[StoredTower]:
+    def all(self) -> list[StoredTower]:
         return self.search()
 
-    def able_to_ring(self, stage: int) -> List[StoredTower]:
+    def able_to_ring(self, stage: int) -> list[StoredTower]:
         """Towers with enough bells for a stage."""
         return self.search(min_bells=stage)
